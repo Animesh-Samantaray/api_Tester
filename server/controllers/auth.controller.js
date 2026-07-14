@@ -108,7 +108,7 @@ export const login = async (req, res) => {
     }
 
     // Compare Password
-    const isPasswordCorrect =  comparePassword(
+    const isPasswordCorrect = await comparePassword(
       password,
       user.password
     );
