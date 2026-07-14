@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { ArrowRight, Eye, EyeOff, Lock, Mail, Terminal } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
-import { motion } from "framer-motion";
-import { Eye, EyeOff, Lock, Mail, ArrowRight } from "lucide-react";
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -17,11 +17,20 @@ export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect destination
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   const from = (location.state as any)?.from?.pathname || "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!email || !password) {
       showToast("Please fill out all fields", "warning");
       return;
@@ -39,13 +48,12 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleSocialMock = (platform: string) => {
-    showToast(`Continuing with ${platform} (Simulated)...`, "info");
+  const handleGoogleMock = () => {
+    showToast("Continuing with Google (Simulated)...", "info");
     setIsLoading(true);
     setTimeout(() => {
-      // Create admin profile mock
       login("admin@api.com", "admin123", true);
-      showToast("Login Successful via Social ID!", "success");
+      showToast("Login Successful via Google!", "success");
       navigate(from, { replace: true });
       setIsLoading(false);
     }, 1200);
@@ -54,13 +62,14 @@ export const LoginPage: React.FC = () => {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        height: "100dvh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         padding: "24px",
         position: "relative",
         background: "var(--hero-glow)",
+        overflow: "hidden",
       }}
     >
       <div className="hero-glow-bg" />
@@ -80,33 +89,35 @@ export const LoginPage: React.FC = () => {
           zIndex: 1,
         }}
       >
-        {/* Title */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <Link
-            to="/"
+          <div
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "8px",
-              fontSize: "1.5rem",
-              fontWeight: 800,
+              gap: "10px",
               marginBottom: "16px",
             }}
           >
-            <span
+            <Link
+              to="/"
+              aria-label="Go to landing page"
               style={{
                 background:
                   "linear-gradient(135deg, hsl(263.4, 70%, 50.4%) 0%, hsl(263.4, 85%, 65%) 100%)",
                 color: "white",
-                padding: "6px",
-                borderRadius: "8px",
-                display: "flex",
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 4px 10px rgba(124, 58, 237, 0.3)",
               }}
             >
-              <Lock size={20} />
-            </span>
-            <span className="text-gradient">APIHUB</span>
-          </Link>
+              <Terminal size={18} />
+            </Link>
+            <span style={{ fontSize: "1.5rem", fontWeight: 800 }}>Sign in</span>
+          </div>
           <h2 style={{ fontSize: "1.5rem", fontWeight: 800 }}>Welcome back</h2>
           <p
             style={{
@@ -119,12 +130,10 @@ export const LoginPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Form */}
         <form
           onSubmit={handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: "20px" }}
         >
-          {/* Email */}
           <div>
             <label
               style={{
@@ -162,7 +171,6 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Password */}
           <div>
             <div
               style={{
@@ -216,7 +224,7 @@ export const LoginPage: React.FC = () => {
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => setShowPassword((current) => !current)}
                 style={{
                   position: "absolute",
                   right: "12px",
@@ -234,7 +242,6 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Remember Me */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <input
               type="checkbox"
@@ -261,7 +268,6 @@ export const LoginPage: React.FC = () => {
             </label>
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             className="btn-primary"
@@ -272,56 +278,16 @@ export const LoginPage: React.FC = () => {
           </button>
         </form>
 
-        {/* Separator */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            margin: "24px 0",
-            gap: "10px",
-          }}
-        >
-          <hr
-            style={{
-              flexGrow: 1,
-              border: 0,
-              borderTop: "1px solid hsl(var(--border))",
-            }}
-          />
-          <span
-            style={{
-              fontSize: "0.75rem",
-              color: "hsl(var(--muted-foreground))",
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-            }}
-          >
-            Or continue with
-          </span>
-          <hr
-            style={{
-              flexGrow: 1,
-              border: 0,
-              borderTop: "1px solid hsl(var(--border))",
-            }}
-          />
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "12px",
-          }}
-        >
+        <div style={{ marginTop: "24px" }}>
           <button
             type="button"
-            onClick={() => handleSocialMock("Google")}
+            onClick={handleGoogleMock}
             className="btn-secondary"
             style={{
               justifyContent: "center",
               fontSize: "0.85rem",
-              padding: "10px",
+              padding: "12px",
+              width: "100%",
             }}
           >
             <svg
@@ -347,37 +313,11 @@ export const LoginPage: React.FC = () => {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                 fill="#EA4335"
               />
-            </svg>{" "}
-            Google
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSocialMock("GitHub")}
-            className="btn-secondary"
-            style={{
-              justifyContent: "center",
-              fontSize: "0.85rem",
-              padding: "10px",
-            }}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="currentColor"
-              style={{ marginRight: "6px" }}
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482C19.138 20.193 22 16.44 22 12.017 22 6.484 17.522 2 12 2z"
-              />
-            </svg>{" "}
-            GitHub
+            </svg>
+            Continue with Google
           </button>
         </div>
 
-        {/* Link to SignUp */}
         <div
           style={{
             textAlign: "center",
@@ -394,27 +334,6 @@ export const LoginPage: React.FC = () => {
             Sign up now{" "}
             <ArrowRight size={14} style={{ verticalAlign: "middle" }} />
           </Link>
-        </div>
-
-        {/* Admin credentials hint */}
-        <div
-          style={{
-            marginTop: "20px",
-            padding: "10px",
-            borderRadius: "6px",
-            background: "hsl(var(--primary) / 0.05)",
-            border: "1px dashed hsl(var(--primary) / 0.2)",
-            fontSize: "0.75rem",
-            textAlign: "center",
-            color: "hsl(var(--muted-foreground))",
-          }}
-        >
-          Demo credentials:{" "}
-          <strong style={{ color: "hsl(var(--foreground))" }}>
-            admin@api.com
-          </strong>{" "}
-          /{" "}
-          <strong style={{ color: "hsl(var(--foreground))" }}>admin123</strong>
         </div>
       </motion.div>
     </div>
