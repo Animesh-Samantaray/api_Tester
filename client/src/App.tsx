@@ -24,7 +24,7 @@ const authRoutes = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
 function AppShell() {
   const location = useLocation();
-  const showNavbar = !authRoutes.includes(location.pathname);
+  const showNavbar = !authRoutes.includes(location.pathname) && location.pathname !== "/dashboard";
 
   return (
     <div

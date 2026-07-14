@@ -44,32 +44,32 @@
 
 .dark {
   /* Dark Theme HSL */
-  --background: 240 10% 3.9%;
+  --background: 240 20% 5%;
   --foreground: 0 0% 98%;
-  --card: 240 10% 5.9%;
+  --card: 240 18% 8.5%;
   --card-foreground: 0 0% 98%;
-  --popover: 240 10% 5.9%;
+  --popover: 240 18% 8.5%;
   --popover-foreground: 0 0% 98%;
-  --primary: 263.4 70% 50.4%;
+  --primary: 263.4 75% 62%;
   --primary-foreground: 210 20% 98%;
-  --secondary: 240 3.7% 15.9%;
+  --secondary: 240 10% 12%;
   --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
+  --muted: 240 10% 12%;
+  --muted-foreground: 240 5% 65%;
   --accent: 263.4 70% 15%;
   --accent-foreground: 263.4 70% 90%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
-  --ring: 263.4 70% 50.4%;
+  --border: 240 12% 14.5%;
+  --input: 240 12% 14.5%;
+  --ring: 263.4 75% 62%;
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
-  --glass-bg: rgba(10, 10, 12, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(12, 12, 16, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.045);
   --hero-glow: radial-gradient(circle at 50% -20%, rgba(124, 58, 237, 0.25) 0%, transparent 60%);
 }
 
@@ -309,4 +309,156 @@ code, pre {
 }
 .toast-item {
   pointer-events: auto;
+}
+
+/* HTTP Method Badge Colors */
+.method-badge {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+}
+.badge-get {
+  background: hsla(142.1, 70.6%, 45.3%, 0.12);
+  color: #10b981;
+  border: 1px solid hsla(142.1, 70.6%, 45.3%, 0.2);
+}
+.badge-post {
+  background: hsla(217.2, 91.2%, 59.8%, 0.12);
+  color: #3b82f6;
+  border: 1px solid hsla(217.2, 91.2%, 59.8%, 0.2);
+}
+.badge-put {
+  background: hsla(24.6, 95%, 53.1%, 0.12);
+  color: #f97316;
+  border: 1px solid hsla(24.6, 95%, 53.1%, 0.2);
+}
+.badge-patch {
+  background: hsla(271.5, 81.3%, 55.9%, 0.12);
+  color: #a855f7;
+  border: 1px solid hsla(271.5, 81.3%, 55.9%, 0.2);
+}
+.badge-delete {
+  background: hsla(0, 84.2%, 60.2%, 0.12);
+  color: #ef4444;
+  border: 1px solid hsla(0, 84.2%, 60.2%, 0.2);
+}
+.badge-options {
+  background: hsla(239, 84%, 67%, 0.12);
+  color: #6366f1;
+  border: 1px solid hsla(239, 84%, 67%, 0.2);
+}
+.badge-head {
+  background: hsla(330, 81%, 60%, 0.12);
+  color: #ec4899;
+  border: 1px solid hsla(330, 81%, 60%, 0.2);
+}
+
+/* Premium Card and Interactive States */
+.premium-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.4), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.premium-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg), 0 4px 20px 0 hsl(var(--primary) / 0.03);
+  border-color: hsl(var(--primary) / 0.2);
+}
+
+.premium-card:hover::before {
+  opacity: 1;
+}
+
+/* Buttons and Micro interactions */
+.btn-premium {
+  background: linear-gradient(135deg, hsl(263.4, 75%, 52%) 0%, hsl(263.4, 85%, 62%) 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px 0 hsl(var(--primary) / 0.25);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  user-select: none;
+}
+
+.btn-premium:hover:not(:disabled) {
+  transform: translateY(-1.5px) scale(1.015);
+  box-shadow: 0 6px 20px 0 hsl(var(--primary) / 0.4);
+}
+
+.btn-premium:active:not(:disabled) {
+  transform: translateY(0) scale(0.985);
+}
+
+.btn-premium:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Centralized Inputs upgrades */
+.input-premium {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-md);
+  color: hsl(var(--foreground));
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.input-premium:focus {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.12), 0 0 12px 0 hsl(var(--ring) / 0.04);
+}
+
+/* Skeleton Loading Shimmer */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--border)) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite linear;
+  border-radius: 4px;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
