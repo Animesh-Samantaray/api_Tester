@@ -8,6 +8,7 @@ import {
 } from "../controllers/auth.controller.js";
 
 import authMiddleware from "../middlewares/auth.middleware.js";
+import generateToken from "../helper/generateToken.js";
 
 const router = express.Router();
 
@@ -39,7 +40,7 @@ router.get(
         );
       }
 
-      const token = createToken(req.user._id);
+      const token = generateToken(req.user._id);
 
       res.cookie("token", token, {
         httpOnly: true,

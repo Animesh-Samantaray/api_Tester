@@ -48,15 +48,9 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleGoogleMock = () => {
-    showToast("Continuing with Google (Simulated)...", "info");
-    setIsLoading(true);
-    setTimeout(() => {
-      login("admin@api.com", "admin123", true);
-      showToast("Login Successful via Google!", "success");
-      navigate(from, { replace: true });
-      setIsLoading(false);
-    }, 1200);
+  const handleGoogleLogin = () => {
+    showToast("Redirecting to Google Login...", "info");
+    window.location.href = "http://localhost:5000/api/auth/google";
   };
 
   return (
@@ -281,7 +275,7 @@ export const LoginPage: React.FC = () => {
         <div style={{ marginTop: "24px" }}>
           <button
             type="button"
-            onClick={handleGoogleMock}
+            onClick={handleGoogleLogin}
             className="btn-secondary"
             style={{
               justifyContent: "center",

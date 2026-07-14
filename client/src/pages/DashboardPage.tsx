@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth, AVATAR_PRESETS } from "../context/AuthContext";
 import type { ApiRequest } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { requestService } from "../services/request.service";
+import type { RequestPayload } from "../services/request.service";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
@@ -183,7 +185,6 @@ export const DashboardPage: React.FC = () => {
     setResponse(null);
     setRespStatus(null);
 
-    const startTime = performance.now();
     showToast("Sending HTTP request...", "info");
 
     // Build Request Headers
@@ -211,56 +212,68 @@ export const DashboardPage: React.FC = () => {
       requestHeaders["Authorization"] = `Basic ${credentials}`;
     }
 
-    // Body preparation
-    let fetchBody: any = undefined;
-    if (
-      method !== "GET" &&
-      method !== "HEAD" &&
-      bodyType === "json" &&
-      requestBody
-    ) {
-      fetchBody = requestBody;
-    }
-
     try {
-      // Trigger real fetch request!
-      const fetchOptions: RequestInit = {
-        method,
-        headers: requestHeaders,
-        body: fetchBody,
-      };
-
-      const res = await fetch(finalUrl, fetchOptions);
-      const endTime = performance.now();
-      const duration = Math.round(endTime - startTime);
-
-      const text = await res.text();
-      let parsedBody: any;
-      try {
-        parsedBody = JSON.parse(text);
-      } catch (err) {
-        parsedBody = text;
+      // Build Auth payload
+      let authPayload: any = { type: "None" };
+      if (authType === "bearer" && bearerToken) {
+        let token = bearerToken;
+        envVariables.forEach((env) => {
+          if (env.enabled) token = token.replaceAll(`{{${env.key}}}`, env.value);
+        });
+        authPayload = {
+          type: "Bearer",
+          token: token
+        };
       }
 
-      // Read response headers
-      const resHeaders: Record<string, string> = {};
-      res.headers.forEach((value, key) => {
-        resHeaders[key] = value;
-      });
+      let parsedBodyToSend: any = {};
+      if (
+        method !== "GET" &&
+        method !== "HEAD" &&
+        bodyType === "json" &&
+        requestBody
+      ) {
+        try {
+          parsedBodyToSend = JSON.parse(requestBody);
+        } catch (e) {
+          parsedBodyToSend = requestBody;
+        }
+      }
 
-      // Calculate approximate payload size in KB
-      const sizeBytes = new Blob([text]).size;
+      const payload: RequestPayload = {
+        method,
+        url: finalUrl,
+        headers: requestHeaders,
+        body: parsedBodyToSend,
+        auth: authPayload,
+      };
+
+      const response = await requestService.sendRequest(payload);
+      const resData = response.data;
+
+      // Extract body text for size calculation
+      const bodyText = typeof resData.body === "object" ? JSON.stringify(resData.body) : String(resData.body || "");
+      const sizeBytes = new Blob([bodyText]).size;
       const sizeKb = parseFloat((sizeBytes / 1024).toFixed(2));
 
-      // Update state
-      setResponse(parsedBody);
-      setRespTime(duration);
-      setRespSize(sizeKb);
-      setRespStatus(res.status);
-      setRespStatusText(res.statusText || "OK");
-      setRespHeaders(resHeaders);
+      // Pretty print JSON body if it's an object or string JSON
+      let displayBody = resData.body;
+      if (typeof displayBody === "string") {
+        try {
+          displayBody = JSON.parse(displayBody);
+        } catch (e) {
+          // Keep as string
+        }
+      }
 
-      // Save to history context
+      setResponse(displayBody);
+      setRespTime(resData.responseTime);
+      setRespSize(sizeKb);
+      setRespStatus(resData.status);
+      setRespStatusText(resData.statusText || "OK");
+      setRespHeaders(resData.headers || {});
+
+      // Save request to history context
       const newHistoryRequest: ApiRequest = {
         id: "req-" + Math.random().toString(36).substring(2, 9),
         name: `${method} ${url.split("?")[0].replace("https://", "").replace("http://", "")}`,
@@ -272,97 +285,35 @@ export const DashboardPage: React.FC = () => {
         body: requestBody,
         timestamp: Date.now(),
         response: {
-          status: res.status,
-          statusText: res.statusText || "OK",
-          time: duration,
+          status: resData.status,
+          statusText: resData.statusText || "OK",
+          time: resData.responseTime,
           size: sizeKb,
           body:
-            typeof parsedBody === "object"
-              ? JSON.stringify(parsedBody, null, 2)
-              : parsedBody,
-          headers: resHeaders,
+            typeof displayBody === "object"
+              ? JSON.stringify(displayBody, null, 2)
+              : String(displayBody),
+          headers: resData.headers || {},
         },
       };
 
       addToHistory(newHistoryRequest);
-      incrementStats(res.status >= 200 && res.status < 400, method);
-      showToast(`Request sent: ${res.status} ${res.statusText}`, "success");
+      incrementStats(resData.status >= 200 && resData.status < 400, method);
+      showToast(`Request sent: ${resData.status} ${resData.statusText}`, "success");
     } catch (err: any) {
-      // Catch CORS blocker or connection issues, provide fallback simulation!
-      const endTime = performance.now();
-      const duration = Math.round(endTime - startTime);
+      showToast(err.message || "Failed to execute request", "error");
+      
+      const errorResponse = {
+        error: "Proxy Request Failed",
+        message: err.message || "An error occurred while routing the request through the backend proxy server.",
+      };
 
-      console.warn(
-        "API request failed, triggering premium simulated sandbox reply:",
-        err,
-      );
-
-      // Build mock sandboxed response
-      let mockBody: any;
-      let status = 200;
-      let statusText = "OK";
-
-      if (url.includes("todos")) {
-        mockBody = {
-          id: 1,
-          title: "delectus aut autem",
-          completed: false,
-          simulated: true,
-          note: "Loaded via APIHUB Sandbox due to browser CORS restriction",
-        };
-      } else if (url.includes("users")) {
-        mockBody = [
-          {
-            id: 1,
-            name: "Leanne Graham",
-            username: "Bret",
-            email: "Sincere@april.biz",
-          },
-          
-          {
-            id: 2,
-            name: "Ervin Howell",
-            username: "Antonette",
-            email: "Shanna@melissa.tv",
-          },
-        ];
-      } else if (method === "POST") {
-        mockBody = {
-          success: true,
-          id: 101,
-          createdAt: new Date().toISOString(),
-          bodySize: requestBody.length,
-        };
-        status = 201;
-        statusText = "Created";
-      } else {
-        mockBody = {
-          error: "CORS / Network Restricted",
-          message:
-            "APIHUB intercepted a failed fetch request (CORS block). To enable real testing, query endpoints with Access-Control-Allow-Origin: *.",
-          simulatedResponse: {
-            method,
-            compiledUrl: finalUrl,
-            headersReceived: requestHeaders,
-          },
-        };
-        status = 200;
-        statusText = "Simulated Reply";
-      }
-
-      setResponse(mockBody);
-      setRespTime(duration);
-      setRespSize(
-        parseFloat(
-          (new Blob([JSON.stringify(mockBody)]).size / 1024).toFixed(2),
-        ),
-      );
-      setRespStatus(status);
-      setRespStatusText(statusText);
-      setRespHeaders({
-        "content-type": "application/json; charset=utf-8",
-        "x-simulated-client": "APIHUB Sandbox",
-      });
+      setResponse(errorResponse);
+      setRespTime(0);
+      setRespSize(parseFloat((new Blob([JSON.stringify(errorResponse)]).size / 1024).toFixed(2)));
+      setRespStatus(500);
+      setRespStatusText("Internal Server Error");
+      setRespHeaders({ "content-type": "application/json" });
 
       // Save request to history context anyway
       const newHistoryRequest: ApiRequest = {
@@ -376,23 +327,17 @@ export const DashboardPage: React.FC = () => {
         body: requestBody,
         timestamp: Date.now(),
         response: {
-          status,
-          statusText,
-          time: duration,
-          size: parseFloat(
-            (new Blob([JSON.stringify(mockBody)]).size / 1024).toFixed(2),
-          ),
-          body: JSON.stringify(mockBody, null, 2),
+          status: 500,
+          statusText: "Proxy Request Failed",
+          time: 0,
+          size: parseFloat((new Blob([JSON.stringify(errorResponse)]).size / 1024).toFixed(2)),
+          body: JSON.stringify(errorResponse, null, 2),
           headers: { "content-type": "application/json" },
         },
       };
 
       addToHistory(newHistoryRequest);
-      incrementStats(true, method);
-      showToast(
-        "CORS restricted. Loaded simulated API Sandbox response.",
-        "warning",
-      );
+      incrementStats(false, method);
     } finally {
       setIsLoading(false);
     }
