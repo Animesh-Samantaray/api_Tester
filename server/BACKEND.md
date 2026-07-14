@@ -146,6 +146,72 @@ No request body required.
 }
 ```
 
+
+---
+
+## Login with Google
+
+### GET
+
+```
+/auth/google
+```
+
+### Description
+
+Redirects the user to Google's OAuth consent screen.
+
+### Authentication
+
+Not Required
+
+### Response
+
+Redirects to Google Login Page.
+
+---
+
+## Google OAuth Callback
+
+### GET
+
+```
+/auth/google/callback
+```
+
+### Description
+
+Google redirects the user back to this endpoint after successful authentication.
+
+The backend:
+
+- Verifies Google account
+- Creates user if not exists
+- Links Google account if email already exists
+- Generates JWT
+- Stores JWT in HTTP-only cookie
+- Redirects user to frontend
+
+### Authentication
+
+Not Required
+
+### Success
+
+Redirects user to
+
+```
+http://localhost:5173/
+```
+
+### Failure
+
+Redirects user to
+
+```
+http://localhost:5173/login
+```
+
 ---
 
 # API Request Module
@@ -673,6 +739,31 @@ No Authentication
 ```
 
 ---
+
+# Environment Variables
+
+Create a `.env` file.
+
+```env
+PORT=5000
+
+MONGO_URI=YOUR_MONGODB_URI
+
+CLIENT_URL=http://localhost:5173
+
+JWT_SECRET=YOUR_SECRET
+
+GOOGLE_CLIENT_ID=YOUR_CLIENT_ID
+
+GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET
+
+GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+
+SESSION_SECRET=YOUR_SESSION_SECRET
+
+NODE_ENV=development
+```
+
 
 # Frontend Guidelines
 
