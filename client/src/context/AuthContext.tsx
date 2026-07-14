@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authService } from '../services/auth.service';
 
 export interface User {
   fullName: string;
@@ -45,6 +46,7 @@ export interface EnvVariable {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isVerifying: boolean;
   login: (email: string, password: string, rememberMe: boolean) => Promise<boolean>;
   signup: (fullName: string, username: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -88,6 +90,7 @@ export const AVATAR_PRESETS = [
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isVerifying, setIsVerifying] = useState<boolean>(true);
   const [history, setHistory] = useState<ApiRequest[]>([]);
   const [collections, setCollections] = useState<ApiCollection[]>([]);
   const [envVariables, setEnvVariables] = useState<EnvVariable[]>([]);
@@ -100,11 +103,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load user and configurations on start
   useEffect(() => {
-    const activeUser = localStorage.getItem('activeUser');
-    if (activeUser) {
-      setUser(JSON.parse(activeUser));
-      setIsAuthenticated(true);
-    }
+    const checkSession = async () => {
+      try {
+        const response = await authService.getMe();
+        if (response.success && response.user) {
+          const mappedUser: User = {
+            fullName: response.user.name,
+            username: response.user.email.split('@')[0],
+            email: response.user.email,
+            avatar: response.user.avatar || AVATAR_PRESETS[0],
+            createdAt: response.user.createdAt,
+          };
+          setUser(mappedUser);
+          setIsAuthenticated(true);
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      } catch {
+        setUser(null);
+        setIsAuthenticated(false);
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+    checkSession();
 
     // Load History
     const savedHistory = localStorage.getItem('api_history');
@@ -226,54 +249,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Simulating Sign Up
-  const signup = async (fullName: string, username: string, email: string, password: string): Promise<boolean> => {
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    
-    // Check email or username exists
-    const exists = users.some((u: any) => u.email === email || u.username === username);
-    if (exists) {
-      throw new Error('User with this email or username already exists');
-    }
-
-    const newUser = {
-      fullName,
-      username,
-      email,
-      password, // In a real app this is hashed, simulated here
-      avatar: AVATAR_PRESETS[Math.floor(Math.random() * AVATAR_PRESETS.length)],
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(newUser);
-    localStorage.setItem('registered_users', JSON.stringify(users));
+  // Real Sign Up with backend integration
+  const signup = async (fullName: string, _username: string, email: string, password: string): Promise<boolean> => {
+    const randomAvatar = AVATAR_PRESETS[Math.floor(Math.random() * AVATAR_PRESETS.length)];
+    await authService.register(fullName, email, password, randomAvatar);
     return true;
   };
 
-  // Simulating Login
+  // Real Login with backend integration
   const login = async (email: string, password: string, rememberMe: boolean): Promise<boolean> => {
-    // Check custom registered users first
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    let matchedUser = users.find((u: any) => u.email === email && u.password === password);
-
-    // Fallback default admin user for instant testing convenience
-    if (!matchedUser && email === 'admin@api.com' && password === 'admin123') {
-      matchedUser = {
-        fullName: 'Alex Carter',
-        username: 'alexcarter',
-        email: 'admin@api.com',
-        avatar: AVATAR_PRESETS[0],
-        createdAt: new Date().toISOString()
-      };
-    }
-
-    if (matchedUser) {
+    const response = await authService.login(email, password);
+    if (response.success && response.user) {
       const userProfile: User = {
-        fullName: matchedUser.fullName,
-        username: matchedUser.username,
-        email: matchedUser.email,
-        avatar: matchedUser.avatar,
-        createdAt: matchedUser.createdAt
+        fullName: response.user.name,
+        username: response.user.email.split('@')[0],
+        email: response.user.email,
+        avatar: response.user.avatar || AVATAR_PRESETS[0],
+        createdAt: response.user.createdAt
       };
 
       setUser(userProfile);
@@ -290,11 +282,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     throw new Error('Invalid email or password');
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('activeUser');
-    sessionStorage.removeItem('activeUser');
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('activeUser');
+      sessionStorage.removeItem('activeUser');
+    }
   };
 
   const updateProfile = (fullName: string, avatar: string) => {
@@ -467,6 +465,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isAuthenticated,
+        isVerifying,
         login,
         signup,
         logout,
