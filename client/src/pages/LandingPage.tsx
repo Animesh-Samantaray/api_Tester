@@ -1140,7 +1140,7 @@ export const LandingPage: React.FC = () => {
                     alignItems: "baseline",
                   }}
                 >
-                  $9{" "}
+                  $19{" "}
                   <span
                     style={{
                       fontSize: "1rem",
