@@ -242,29 +242,57 @@ code, pre {
   box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
 }
 
-/* JSON Formatter syntax coloring */
+/* Response JSON viewer — syntax colors and hierarchy inspired by API clients. */
 .json-key {
-  color: #c084fc;
+  color: #0e7490;
+  font-weight: 600;
 }
 .dark .json-key {
-  color: #a78bfa;
+  color: #67e8f9;
 }
 .json-string {
-  color: #34d399;
+  color: #15803d;
 }
+.dark .json-string { color: #86efac; }
 .json-number {
-  color: #fb923c;
+  color: #9333ea;
 }
+.dark .json-number { color: #d8b4fe; }
 .json-boolean {
-  color: #38bdf8;
+  color: #2563eb;
 }
+.dark .json-boolean { color: #93c5fd; }
 .json-null {
-  color: #94a3b8;
+  color: #64748b;
+  font-style: italic;
 }
 .json-punctuation {
-  color: hsl(var(--foreground));
-  opacity: 0.7;
+  color: hsl(var(--muted-foreground));
 }
+.json-node {
+  padding-left: 0.35rem;
+  line-height: 1.75;
+}
+.json-line, .json-toggle {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+}
+.json-toggle {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 4px;
+  user-select: none;
+}
+.json-toggle:hover { background: hsl(var(--accent)); }
+.json-toggle:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.json-children {
+  margin: 0.2rem 0 0.2rem 0.4rem;
+  padding-left: 0.8rem;
+  border-left: 1px solid hsl(var(--border));
+}
+.json-child { min-height: 1.75rem; }
 
 /* Custom Accordion styles */
 .faq-accordion {

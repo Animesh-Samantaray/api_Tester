@@ -533,32 +533,34 @@ export const DashboardPage: React.FC = () => {
     label: string = "",
     path: string = "root",
   ): React.ReactNode => {
+    const key = label && <><span className="json-key">&quot;{label}&quot;</span><span className="json-punctuation">: </span></>;
+
     if (val === null)
       return (
-        <span>
-          <span className="json-key">{label}</span>:{" "}
+        <span className="json-line">
+          {key}
           <span className="json-null">null</span>
         </span>
       );
     if (typeof val === "boolean")
       return (
-        <span>
-          <span className="json-key">{label}</span>:{" "}
+        <span className="json-line">
+          {key}
           <span className="json-boolean">{String(val)}</span>
         </span>
       );
     if (typeof val === "number")
       return (
-        <span>
-          <span className="json-key">{label}</span>:{" "}
+        <span className="json-line">
+          {key}
           <span className="json-number">{val}</span>
         </span>
       );
     if (typeof val === "string")
       return (
-        <span>
-          <span className="json-key">{label}</span>:{" "}
-          <span className="json-string">"{val}"</span>
+        <span className="json-line">
+          {key}
+          <span className="json-string">&quot;{val}&quot;</span>
         </span>
       );
 
@@ -567,42 +569,32 @@ export const DashboardPage: React.FC = () => {
     const keys = Object.keys(val);
 
     return (
-      <div style={{ paddingLeft: "16px" }}>
+      <div className="json-node">
         <span
           onClick={() =>
             setJsonCollapsed({ ...jsonCollapsed, [path]: !isCollapsed })
           }
-          style={{
-            cursor: "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "4px",
-            fontWeight: 600,
-            userSelect: "none",
+          className="json-toggle"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setJsonCollapsed({ ...jsonCollapsed, [path]: !isCollapsed });
+            }
           }}
         >
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-          <span className="json-key">
-            {label || (isArray ? "Array" : "Object")}
-          </span>
+          {key}
           <span className="json-punctuation">
             {isArray ? `[${keys.length}]` : `{${keys.length}}`}
           </span>
         </span>
 
         {!isCollapsed && (
-          <div
-            style={{
-              borderLeft: "1px dashed hsl(var(--border))",
-              marginLeft: "6px",
-              marginTop: "4px",
-            }}
-          >
+          <div className="json-children">
             {keys.map((k) => (
-              <div
-                key={k}
-                style={{ paddingLeft: "12px", paddingBottom: "2px" }}
-              >
+              <div key={k} className="json-child">
                 {renderJSONNode(val[k], k, `${path}.${k}`)}
               </div>
             ))}
