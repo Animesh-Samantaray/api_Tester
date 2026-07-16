@@ -7,7 +7,7 @@ import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/auth.routes.js";
 import requestRoutes from './routes/request.routes.js'
-
+import historyRoutes from './routes/history.routes.js';
 
 const app = express();
 
@@ -34,7 +34,9 @@ mongoose
 app.use("/api/auth", authRoutes);
 
 app.use("/api/request", requestRoutes);
-// Home Route
+app.use("/api/history", historyRoutes);
+
+
 app.get("/", (req, res) => {
   res.json({
     success: true,
