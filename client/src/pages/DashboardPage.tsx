@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useAuth, AVATAR_PRESETS } from "../context/AuthContext";
+import { useAuth, AVATAR_PRESETS, DEFAULT_AVATAR } from "../context/AuthContext";
 import type { ApiRequest } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useTheme } from "../context/ThemeContext";
 import { requestService } from "../services/request.service";
 import type { RequestPayload } from "../services/request.service";
+import { authService } from "../services/auth.service";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
@@ -17,7 +18,6 @@ import {
   Settings as SettingsIcon,
   LogOut,
   Plus,
-  Check,
   Play,
   Copy,
   ChevronRight,
@@ -119,6 +119,63 @@ export const DashboardPage: React.FC = () => {
   const [newPass, setNewPass] = useState("");
   const [confirmNewPass, setConfirmNewPass] = useState("");
   const [passUpdating, setPassUpdating] = useState(false);
+
+  // Profile picture upload and Sidebar collapse states
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragActive(false);
+  };
+
+  const processImageFile = (file: File) => {
+    const validTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      showToast("Unsupported file format. Please upload PNG, JPG, JPEG, or WEBP.", "error");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast("File is too large. Limit is 10MB.", "error");
+      return;
+    }
+
+    // Keep actual file for POST request
+    setAvatarFile(file);
+
+    // Create instant local URL for fast rendering
+    const localUrl = URL.createObjectURL(file);
+    setUploadPreview(localUrl);
+    showToast("Image selected. Save Details to apply changes.", "info");
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processImageFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      processImageFile(e.target.files[0]);
+    }
+  };
+
+  const handleRemoveAvatar = () => {
+    setUploadPreview(null);
+    setAvatarFile(null);
+    setSettingsAvatar("");
+    showToast("Avatar scheduled for removal. Save Details to apply changes.", "warning");
+  };
 
   // Update Settings local state if user changes (e.g. from context load)
   useEffect(() => {
@@ -457,14 +514,31 @@ export const DashboardPage: React.FC = () => {
   };
 
   // Settings & Profile updates
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!settingsName.trim()) {
       showToast("Name cannot be empty", "warning");
       return;
     }
-    updateProfile(settingsName, settingsAvatar);
-    showToast("Profile updated successfully!", "success");
+    try {
+      let finalAvatarUrl = settingsAvatar;
+      if (avatarFile) {
+        showToast("Uploading profile image...", "info");
+        const uploadRes = await authService.uploadAvatar(avatarFile);
+        if (uploadRes.success && uploadRes.avatarUrl) {
+          finalAvatarUrl = uploadRes.avatarUrl;
+          setSettingsAvatar(finalAvatarUrl);
+          setAvatarFile(null);
+        } else {
+          showToast(uploadRes.message || "Failed to upload avatar", "error");
+          return;
+        }
+      }
+      await updateProfile(settingsName, finalAvatarUrl);
+      showToast("Profile updated successfully!", "success");
+    } catch (err: any) {
+      showToast(err.message || "Failed to update profile", "error");
+    }
   };
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
@@ -2171,56 +2245,72 @@ export const DashboardPage: React.FC = () => {
                   display: "block",
                   fontSize: "0.8rem",
                   color: "hsl(var(--muted-foreground))",
-                  marginBottom: "10px",
+                  marginBottom: "12px",
+                  fontWeight: 600
                 }}
               >
-                Select Avatar Preset
+                Profile Photo
               </label>
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                {AVATAR_PRESETS.map((av) => (
-                  <div
-                    key={av}
-                    onClick={() => setSettingsAvatar(av)}
-                    style={{
-                      width: "40px",
-                      height: "40px",
-                      borderRadius: "50%",
-                      cursor: "pointer",
-                      position: "relative",
-                      border:
-                        settingsAvatar === av
-                          ? "2.5px solid hsl(var(--primary))"
-                          : "1px solid hsl(var(--border))",
-                      overflow: "hidden",
-                      transition: "all var(--transition-fast)",
-                    }}
-                  >
-                    <img
-                      src={av}
-                      alt="Preset avatar option"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                    {settingsAvatar === av && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          background: "rgba(124, 58, 237, 0.2)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "white",
-                        }}
+              <div 
+                style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "24px",
+                  padding: "16px",
+                  borderRadius: "var(--radius-md)",
+                  border: isDragActive ? "2px dashed hsl(var(--primary))" : "1px dashed hsl(var(--border))",
+                  background: isDragActive ? "hsl(var(--primary) / 0.05)" : "hsl(var(--secondary) / 0.1)",
+                  transition: "all var(--transition-normal)",
+                  position: "relative"
+                }}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                {/* Circular Avatar Preview */}
+                <div style={{ position: "relative", width: "80px", height: "80px", borderRadius: "50%", overflow: "hidden", border: "2px solid hsl(var(--border))" }}>
+                  <img 
+                    src={uploadPreview || settingsAvatar || DEFAULT_AVATAR} 
+                    alt="Profile Avatar Preview" 
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <span style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>
+                    Drag & drop or click to upload. Support WEBP, PNG, JPG (Max 2MB).
+                  </span>
+                  
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById("avatar-upload-input")?.click()}
+                      className="btn-secondary"
+                      style={{ padding: "6px 12px", fontSize: "0.75rem" }}
+                    >
+                      {settingsAvatar ? "Replace Photo" : "Upload Photo"}
+                    </button>
+                    
+                    {settingsAvatar && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        className="btn-secondary"
+                        style={{ padding: "6px 12px", fontSize: "0.75rem", color: "hsl(var(--destructive))", borderColor: "hsl(var(--destructive) / 0.2)" }}
                       >
-                        <Check size={14} strokeWidth={3} />
-                      </div>
+                        Remove
+                      </button>
                     )}
                   </div>
-                ))}
+                </div>
+
+                <input 
+                  type="file"
+                  id="avatar-upload-input"
+                  style={{ display: "none" }}
+                  accept="image/png, image/jpeg, image/jpg, image/webp"
+                  onChange={handleFileSelect}
+                />
               </div>
             </div>
 
@@ -2367,10 +2457,7 @@ export const DashboardPage: React.FC = () => {
 
   const renderMetricsDashboard = () => {
     const successRate = stats.totalRequests > 0 ? Math.round((stats.successCount / stats.totalRequests) * 100) : 100;
-    const lastRequests = history.filter(h => h.response);
-    const avgResponseTime = lastRequests.length > 0 
-      ? Math.round(lastRequests.reduce((acc, h) => acc + (h.response?.time || 0), 0) / lastRequests.length) 
-      : 0;
+    const avgResponseTime = stats.averageResponseTime || 0;
 
     return (
       <div
@@ -2459,7 +2546,7 @@ export const DashboardPage: React.FC = () => {
       {/* Dashboard Left Sidebar */}
       <aside
         style={{
-          width: "260px",
+          width: isSidebarCollapsed ? "72px" : "260px",
           height: "100vh",
           position: "fixed",
           top: 0,
@@ -2470,63 +2557,120 @@ export const DashboardPage: React.FC = () => {
           borderRight: "1px solid var(--glass-border)",
           display: "flex",
           flexDirection: "column",
-          padding: "24px 16px",
+          padding: isSidebarCollapsed ? "24px 10px" : "24px 16px",
           zIndex: 100,
-          justifyContent: "space-between"
+          justifyContent: "space-between",
+          transition: "width var(--transition-normal), padding var(--transition-normal)"
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          {/* Logo */}
-          <Link
-            to="/"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "10px",
-              paddingLeft: "8px",
-              textDecoration: "none"
-            }}
-          >
-            <div
+          {/* Logo & Toggle Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: isSidebarCollapsed ? "center" : "space-between", gap: "10px", width: "100%" }}>
+            <Link
+              to="/"
               style={{
-                background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(263.4, 90%, 68%) 100%)",
-                color: "white",
-                width: "34px",
-                height: "34px",
-                borderRadius: "10px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "10px",
+                textDecoration: "none"
+              }}
+            >
+              <div
+                style={{
+                  background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(263.4, 90%, 68%) 100%)",
+                  color: "white",
+                  width: "34px",
+                  height: "34px",
+                  borderRadius: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 4px 12px hsl(var(--primary) / 0.3)",
+                  flexShrink: 0
+                }}
+              >
+                <Terminal size={18} />
+              </div>
+              {!isSidebarCollapsed && (
+                <span className="text-gradient" style={{ fontSize: "1.3rem", fontWeight: 800, letterSpacing: "-0.5px", color: "hsl(var(--foreground))" }}>
+                  APIHUB
+                </span>
+              )}
+            </Link>
+
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "hsl(var(--muted-foreground))",
+                cursor: "pointer",
+                display: isSidebarCollapsed ? "none" : "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "4px"
+              }}
+            >
+              <ChevronRight size={16} style={{ transform: isSidebarCollapsed ? "rotate(0deg)" : "rotate(180deg)", transition: "transform var(--transition-normal)" }} />
+            </button>
+          </div>
+
+          {isSidebarCollapsed && (
+            <button
+              onClick={() => setIsSidebarCollapsed(false)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "hsl(var(--muted-foreground))",
+                cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 4px 12px hsl(var(--primary) / 0.3)"
+                padding: "6px",
+                margin: "0 auto",
+                borderRadius: "50%",
+                backgroundColor: "hsl(var(--secondary) / 0.2)"
               }}
+              title="Expand Sidebar"
             >
-              <Terminal size={18} />
-            </div>
-            <span className="text-gradient" style={{ fontSize: "1.3rem", fontWeight: 800, letterSpacing: "-0.5px", color: "hsl(var(--foreground))" }}>
-              APIHUB
-            </span>
-          </Link>
+              <ChevronRight size={16} />
+            </button>
+          )}
 
           {/* Workspace Switcher */}
-          <div
-            className="premium-card"
-            style={{
-              padding: "10px 12px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "hsl(var(--secondary) / 0.15)",
-              border: "1px solid hsl(var(--border) / 0.6)",
-              borderRadius: "var(--radius-md)",
-              cursor: "pointer",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10b981" }} />
-              <span style={{ fontSize: "0.8rem", fontWeight: 700 }}>Personal Space</span>
+          {!isSidebarCollapsed ? (
+            <div
+              className="premium-card"
+              style={{
+                padding: "10px 12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "hsl(var(--secondary) / 0.15)",
+                border: "1px solid hsl(var(--border) / 0.6)",
+                borderRadius: "var(--radius-md)",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10b981" }} />
+                <span style={{ fontSize: "0.8rem", fontWeight: 700 }}>Personal Space</span>
+              </div>
+              <ChevronDown size={14} style={{ opacity: 0.6 }} />
             </div>
-            <ChevronDown size={14} style={{ opacity: 0.6 }} />
-          </div>
+          ) : (
+            <div
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: "#10b981",
+                margin: "0 auto",
+                boxShadow: "0 0 8px #10b981"
+              }}
+              title="Personal Space"
+            />
+          )}
 
           {/* Nav Items */}
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -2542,9 +2686,11 @@ export const DashboardPage: React.FC = () => {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id as any)}
+                  title={isSidebarCollapsed ? item.label : undefined}
                   style={{
                     display: "flex",
                     alignItems: "center",
+                    justifyContent: isSidebarCollapsed ? "center" : "flex-start",
                     gap: "12px",
                     padding: "10px 14px",
                     borderRadius: "10px",
@@ -2552,7 +2698,7 @@ export const DashboardPage: React.FC = () => {
                     color: isActive ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
                     fontWeight: isActive ? 700 : 500,
                     border: "none",
-                    borderLeft: isActive ? "3px solid hsl(var(--primary))" : "3px solid transparent",
+                    borderLeft: !isSidebarCollapsed && isActive ? "3px solid hsl(var(--primary))" : "3px solid transparent",
                     textAlign: "left",
                     cursor: "pointer",
                     fontSize: "0.85rem",
@@ -2572,7 +2718,7 @@ export const DashboardPage: React.FC = () => {
                     }
                   }}
                 >
-                  {item.icon} {item.label}
+                  {item.icon} {!isSidebarCollapsed && item.label}
                 </button>
               );
             })}
@@ -2589,7 +2735,7 @@ export const DashboardPage: React.FC = () => {
             gap: "12px"
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: isSidebarCollapsed ? "center" : "flex-start", gap: "10px" }}>
             <img
               src={user?.avatar}
               alt={user?.fullName}
@@ -2601,17 +2747,20 @@ export const DashboardPage: React.FC = () => {
                 border: "1.5px solid hsl(var(--primary) / 0.3)"
               }}
             />
-            <div style={{ minWidth: 0, flexGrow: 1 }}>
-              <div style={{ fontSize: "0.8rem", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {user?.fullName}
+            {!isSidebarCollapsed && (
+              <div style={{ minWidth: 0, flexGrow: 1 }}>
+                <div style={{ fontSize: "0.8rem", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {user?.fullName}
+                </div>
+                <div style={{ fontSize: "0.7rem", color: "hsl(var(--muted-foreground))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {user?.email}
+                </div>
               </div>
-              <div style={{ fontSize: "0.7rem", color: "hsl(var(--muted-foreground))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {user?.email}
-              </div>
-            </div>
+            )}
           </div>
           <button
             onClick={logout}
+            title={isSidebarCollapsed ? "Logout" : undefined}
             style={{
               display: "flex",
               alignItems: "center",
@@ -2639,7 +2788,7 @@ export const DashboardPage: React.FC = () => {
               e.currentTarget.style.background = "none";
             }}
           >
-            <LogOut size={14} /> Logout
+            <LogOut size={14} /> {!isSidebarCollapsed && "Logout"}
           </button>
         </div>
       </aside>
@@ -2648,10 +2797,11 @@ export const DashboardPage: React.FC = () => {
       <div
         style={{
           flexGrow: 1,
-          marginLeft: "260px",
+          marginLeft: isSidebarCollapsed ? "72px" : "260px",
           display: "flex",
           flexDirection: "column",
-          minHeight: "100vh"
+          minHeight: "100vh",
+          transition: "margin-left var(--transition-normal)"
         }}
       >
         {/* Sticky Topbar */}

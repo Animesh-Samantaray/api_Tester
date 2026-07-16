@@ -1,32 +1,42 @@
-# React + TypeScript + Vite
+# API Testing Tool - Client Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This is the frontend client application for the **API Testing Tool**, a React single-page application built using Vite, TypeScript, and React Router.
 
-Currently, two official plugins are available:
+## Technologies
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **UI Library**: React 19 with TypeScript
+- **Bundler**: Vite 8
+- **Routing**: React Router 7
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+- **HTTP Client**: Axios (configured with `withCredentials: true` to auto-propagate sessions)
+- **Styling**: Modern Vanilla CSS variables with custom dark and light themes
 
-## React Compiler
+## Features Connected to Backend
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Authentication**: Sign Up, Log In, Log Out, Google OAuth, and automatic session persistence check (`GET /auth/me`) on refresh.
+- **User Profile**: Real-time display of profile name, email, role, and avatar. Profile editing and password updating are fully connected to the backend.
+- **API Tester**: Composes and executes HTTP queries through the server proxy, populating responses, headers, time, and sizes.
+- **Request History**: Dynamically synced history logs loaded from the backend, supporting clearing and auto-populating request builders on click.
+- **Collections & Saved Requests**: Creation, naming, updates, nested requests saving, and deletion are fully database-driven.
+- **Dashboard Stats**: Real metrics (Total requests, success vs fail counts, method distribution) computed dynamically on the server.
 
-## Expanding the Oxlint configuration
+## Installation & Setup
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+1. Make sure the backend server in `../server/` is configured and running on `http://localhost:5000`.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+4. Build the production application:
+   ```bash
+   npm run build
+   ```
+5. Preview the built application:
+   ```bash
+   npm run preview
+   ```
