@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/auth.service';
+import { collectionService } from '../services/collection.service';
+import api from '../services/axios';
 
 export interface User {
   fullName: string;
   username: string;
   email: string;
-  avatar: string; // Avatar template name or URL
+  avatar: string; // Default avatar or backend URL
+  role: string;
   createdAt: string;
 }
 
@@ -16,7 +19,7 @@ export interface ApiRequest {
   url: string;
   headers: { key: string; value: string; active: boolean }[];
   params: { key: string; value: string; active: boolean }[];
-  bodyType: 'none' | 'json' | 'form-data' | 'raw';
+  bodyType: 'none' | 'json';
   body: string;
   timestamp: number;
   response?: {
@@ -50,7 +53,7 @@ interface AuthContextType {
   login: (email: string, password: string, rememberMe: boolean) => Promise<boolean>;
   signup: (fullName: string, username: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  updateProfile: (fullName: string, avatar: string) => void;
+  updateProfile: (fullName: string, avatar: string) => Promise<void>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
   forgotPasswordSimulate: (email: string) => Promise<boolean>;
   resetPasswordSimulate: (token: string, newPassword: string) => Promise<boolean>;
@@ -64,6 +67,7 @@ interface AuthContextType {
     successCount: number;
     failCount: number;
     methodDistribution: Record<string, number>;
+    averageResponseTime: number;
   };
   
   // Operations
@@ -74,18 +78,17 @@ interface AuthContextType {
   deleteCollection: (collectionId: string) => void;
   updateEnvVariables: (vars: EnvVariable[]) => void;
   incrementStats: (isSuccess: boolean, method: string) => void;
+  fetchHistory: () => Promise<void>;
+  fetchStats: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Preset avatars
-export const AVATAR_PRESETS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
-];
+// Premium generic SVG default avatar (Purple Theme Person Icon)
+export const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%237c3aed'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>";
+
+// Preset avatars is just an array of the default avatar (as requested, no random generation/presets needed)
+export const AVATAR_PRESETS = [DEFAULT_AVATAR];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -99,7 +102,126 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     successCount: 0,
     failCount: 0,
     methodDistribution: { GET: 0, POST: 0, PUT: 0, DELETE: 0, PATCH: 0 } as Record<string, number>,
+    averageResponseTime: 0,
   });
+
+  // Dynamic mappers
+  const mapBackendRequestToFrontend = (item: any): ApiRequest => {
+    const headersArray = item.headers && typeof item.headers === 'object'
+      ? Object.entries(item.headers).map(([key, value]) => ({
+          key,
+          value: String(value),
+          active: true,
+        }))
+      : [];
+
+    const parsedParams: { key: string; value: string; active: boolean }[] = [];
+    try {
+      const urlObj = new URL(item.url.includes("//") ? item.url : "http://" + item.url);
+      urlObj.searchParams.forEach((value, key) => {
+        parsedParams.push({ key, value, active: true });
+      });
+    } catch (e) {
+      // ignore
+    }
+
+    let bodyStr = "";
+    let bodyType: 'none' | 'json' = 'none';
+    if (item.body) {
+      bodyStr = typeof item.body === "string" ? item.body : JSON.stringify(item.body, null, 2);
+      if (bodyStr && bodyStr !== "{}") {
+        bodyType = 'json';
+      }
+    }
+
+    let mappedResponse = undefined;
+    if (item.status !== undefined) {
+      mappedResponse = {
+        status: item.status || 200,
+        statusText: "OK",
+        time: item.responseTime || 0,
+        size: 0,
+        body: "",
+        headers: {},
+      };
+    }
+
+    return {
+      id: item._id,
+      name: `${item.method} ${item.url.split("?")[0].replace("https://", "").replace("http://", "")}`,
+      method: item.method,
+      url: item.url,
+      headers: headersArray,
+      params: parsedParams,
+      bodyType,
+      body: bodyStr,
+      timestamp: item.createdAt ? new Date(item.createdAt).getTime() : Date.now(),
+      response: mappedResponse,
+    };
+  };
+
+  const fetchHistory = async () => {
+    try {
+      const response = await api.get('/history');
+      if (response.data && response.data.success) {
+        const mapped = response.data.data.map((item: any) => mapBackendRequestToFrontend(item));
+        setHistory(mapped);
+      }
+    } catch (error) {
+      console.error("Failed to fetch history:", error);
+    }
+  };
+
+  const fetchCollections = async () => {
+    try {
+      const response = await collectionService.getCollections();
+      if (response.success && response.data) {
+        const mapped = response.data.map((col: any) => ({
+          id: col._id,
+          name: col.name,
+          description: col.description,
+          requests: col.requests.map((r: any) => ({
+            id: r._id,
+            name: r.name,
+            method: r.method,
+            url: r.url,
+            headers: r.headers || [],
+            params: r.params || [],
+            bodyType: r.bodyType || 'none',
+            body: r.body || '',
+            timestamp: r.createdAt ? new Date(r.createdAt).getTime() : Date.now(),
+          })),
+          createdAt: col.createdAt ? new Date(col.createdAt).getTime() : Date.now(),
+        }));
+        setCollections(mapped);
+      }
+    } catch (error) {
+      console.error("Failed to fetch collections:", error);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await authService.getStats();
+      if (response.success && response.stats) {
+        setStats({
+          totalRequests: response.stats.totalRequests,
+          successCount: response.stats.successCount,
+          failCount: response.stats.failCount,
+          methodDistribution: {
+            GET: response.stats.methodDistribution.GET || 0,
+            POST: response.stats.methodDistribution.POST || 0,
+            PUT: response.stats.methodDistribution.PUT || 0,
+            DELETE: response.stats.methodDistribution.DELETE || 0,
+            PATCH: response.stats.methodDistribution.PATCH || 0,
+          },
+          averageResponseTime: response.stats.averageResponseTime || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch stats:", error);
+    }
+  };
 
   // Load user and configurations on start
   useEffect(() => {
@@ -111,11 +233,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             fullName: response.user.name,
             username: response.user.email.split('@')[0],
             email: response.user.email,
-            avatar: response.user.avatar || AVATAR_PRESETS[0],
+            avatar: response.user.avatar || DEFAULT_AVATAR,
+            role: response.user.role || "Developer",
             createdAt: response.user.createdAt,
           };
           setUser(mappedUser);
           setIsAuthenticated(true);
+          
+          // Fetch backend data
+          await Promise.all([
+            fetchHistory(),
+            fetchCollections(),
+            fetchStats()
+          ]);
         } else {
           setUser(null);
           setIsAuthenticated(false);
@@ -129,159 +259,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     checkSession();
 
-    // Load History
-    const savedHistory = localStorage.getItem('api_history');
-    if (savedHistory) {
-      setHistory(JSON.parse(savedHistory));
-    } else {
-      // Default demo history items
-      const demoHistory: ApiRequest[] = [
-        {
-          id: 'demo-h1',
-          name: 'Get User List',
-          method: 'GET',
-          url: 'https://jsonplaceholder.typicode.com/users',
-          headers: [{ key: 'Accept', value: 'application/json', active: true }],
-          params: [],
-          bodyType: 'none',
-          body: '',
-          timestamp: Date.now() - 3600000 * 2,
-          response: {
-            status: 200,
-            statusText: 'OK',
-            time: 142,
-            size: 1.6,
-            body: JSON.stringify([{ id: 1, name: 'Leanne Graham', email: 'Sincere@april.biz' }], null, 2),
-            headers: { 'content-type': 'application/json' }
-          }
-        },
-        {
-          id: 'demo-h2',
-          name: 'Create Post',
-          method: 'POST',
-          url: 'https://jsonplaceholder.typicode.com/posts',
-          headers: [{ key: 'Content-Type', value: 'application/json', active: true }],
-          params: [],
-          bodyType: 'json',
-          body: JSON.stringify({ title: 'New API Tool', body: 'This is built with React', userId: 1 }, null, 2),
-          timestamp: Date.now() - 3600000 * 5,
-          response: {
-            status: 201,
-            statusText: 'Created',
-            time: 215,
-            size: 0.25,
-            body: JSON.stringify({ id: 101, title: 'New API Tool', body: 'This is built with React', userId: 1 }, null, 2),
-            headers: { 'content-type': 'application/json' }
-          }
-        }
-      ];
-      setHistory(demoHistory);
-      localStorage.setItem('api_history', JSON.stringify(demoHistory));
-    }
-
-    // Load Collections
-    const savedCollections = localStorage.getItem('api_collections');
-    if (savedCollections) {
-      setCollections(JSON.parse(savedCollections));
-    } else {
-      const demoCollections: ApiCollection[] = [
-        {
-          id: 'col-1',
-          name: 'JSONPlaceholder API',
-          description: 'Standard fake online REST API for testing and prototyping.',
-          createdAt: Date.now() - 86400000 * 3,
-          requests: [
-            {
-              id: 'req-col-1',
-              name: 'Get All Todos',
-              method: 'GET',
-              url: '{{baseUrl}}/todos',
-              headers: [],
-              params: [{ key: '_limit', value: '5', active: true }],
-              bodyType: 'none',
-              body: '',
-              timestamp: Date.now()
-            },
-            {
-              id: 'req-col-2',
-              name: 'Delete Post 1',
-              method: 'DELETE',
-              url: '{{baseUrl}}/posts/1',
-              headers: [],
-              params: [],
-              bodyType: 'none',
-              body: '',
-              timestamp: Date.now()
-            }
-          ]
-        }
-      ];
-      setCollections(demoCollections);
-      localStorage.setItem('api_collections', JSON.stringify(demoCollections));
-    }
-
-    // Load Environment Variables
+    // Load Environment Variables (UI workspace preferences kept in localstorage as not backed up in DB)
     const savedEnv = localStorage.getItem('api_env');
     if (savedEnv) {
       setEnvVariables(JSON.parse(savedEnv));
     } else {
       const defaultEnv = [
         { key: 'baseUrl', value: 'https://jsonplaceholder.typicode.com', enabled: true },
-        { key: 'authToken', value: 'bearer_token_demo_xyz123', enabled: false }
       ];
       setEnvVariables(defaultEnv);
       localStorage.setItem('api_env', JSON.stringify(defaultEnv));
     }
-
-    // Load Statistics
-    const savedStats = localStorage.getItem('api_stats');
-    if (savedStats) {
-      setStats(JSON.parse(savedStats));
-    } else {
-      const initialStats = {
-        totalRequests: 24,
-        successCount: 22,
-        failCount: 2,
-        methodDistribution: { GET: 15, POST: 5, PUT: 2, DELETE: 2, PATCH: 0 },
-      };
-      setStats(initialStats);
-      localStorage.setItem('api_stats', JSON.stringify(initialStats));
-    }
   }, []);
 
-  // Real Sign Up with backend integration
+  // Sign Up with backend integration
   const signup = async (fullName: string, _username: string, email: string, password: string): Promise<boolean> => {
-    const randomAvatar = AVATAR_PRESETS[Math.floor(Math.random() * AVATAR_PRESETS.length)];
-    await authService.register(fullName, email, password, randomAvatar);
+    // Avoid generating random avatars. Pass default avatar URL
+    await authService.register(fullName, email, password, DEFAULT_AVATAR);
     return true;
   };
 
-  // Real Login with backend integration
-  const login = async (email: string, password: string, rememberMe: boolean): Promise<boolean> => {
+  // Login with backend integration
+  const login = async (email: string, password: string, _rememberMe: boolean): Promise<boolean> => {
     const response = await authService.login(email, password);
     if (response.success && response.user) {
       const userProfile: User = {
         fullName: response.user.name,
         username: response.user.email.split('@')[0],
         email: response.user.email,
-        avatar: response.user.avatar || AVATAR_PRESETS[0],
+        avatar: response.user.avatar || DEFAULT_AVATAR,
+        role: response.user.role || "Developer",
         createdAt: response.user.createdAt
       };
 
       setUser(userProfile);
       setIsAuthenticated(true);
-      
-      if (rememberMe) {
-        localStorage.setItem('activeUser', JSON.stringify(userProfile));
-      } else {
-        sessionStorage.setItem('activeUser', JSON.stringify(userProfile));
-      }
+
+      // Fetch user workspace data
+      await Promise.all([
+        fetchHistory(),
+        fetchCollections(),
+        fetchStats()
+      ]);
       return true;
     }
     
     throw new Error('Invalid email or password');
   };
 
+  // Logout with backend integration
   const logout = async () => {
     try {
       await authService.logout();
@@ -290,148 +316,116 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setUser(null);
       setIsAuthenticated(false);
-      localStorage.removeItem('activeUser');
-      sessionStorage.removeItem('activeUser');
-    }
-  };
-
-  const updateProfile = (fullName: string, avatar: string) => {
-    if (!user) return;
-    const updated = { ...user, fullName, avatar };
-    setUser(updated);
-
-    // Update in localStorage active session
-    if (localStorage.getItem('activeUser')) {
-      localStorage.setItem('activeUser', JSON.stringify(updated));
-    } else {
-      sessionStorage.setItem('activeUser', JSON.stringify(updated));
-    }
-
-    // Update in registered list
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    const index = users.findIndex((u: any) => u.email === user.email);
-    if (index !== -1) {
-      users[index].fullName = fullName;
-      users[index].avatar = avatar;
-      localStorage.setItem('registered_users', JSON.stringify(users));
-    }
-  };
-
-  const changePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
-    if (!user) return false;
-    
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    const index = users.findIndex((u: any) => u.email === user.email);
-    
-    if (index !== -1) {
-      if (users[index].password !== oldPassword) {
-        throw new Error('Incorrect current password');
-      }
-      users[index].password = newPassword;
-      localStorage.setItem('registered_users', JSON.stringify(users));
-      return true;
-    }
-
-    // Default user password update mock
-    if (user.email === 'admin@api.com') {
-      if (oldPassword !== 'admin123') {
-        throw new Error('Incorrect current password');
-      }
-      // Success simulation
-      return true;
-    }
-
-    throw new Error('User not found in system storage');
-  };
-
-  const forgotPasswordSimulate = async (email: string): Promise<boolean> => {
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    const exists = users.some((u: any) => u.email === email) || email === 'admin@api.com';
-    if (!exists) {
-      throw new Error('No account found with this email address');
-    }
-    // Simulate link generation
-    localStorage.setItem('reset_token', 'simulate-reset-token-xyz');
-    localStorage.setItem('reset_email', email);
-    return true;
-  };
-
-  const resetPasswordSimulate = async (token: string, newPassword: string): Promise<boolean> => {
-    const savedToken = localStorage.getItem('reset_token');
-    const resetEmail = localStorage.getItem('reset_email');
-    
-    if (!savedToken || savedToken !== token) {
-      throw new Error('Invalid or expired password reset link');
-    }
-
-    const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    const index = users.findIndex((u: any) => u.email === resetEmail);
-    
-    if (index !== -1) {
-      users[index].password = newPassword;
-      localStorage.setItem('registered_users', JSON.stringify(users));
-      localStorage.removeItem('reset_token');
-      localStorage.removeItem('reset_email');
-      return true;
-    }
-
-    if (resetEmail === 'admin@api.com') {
-      localStorage.removeItem('reset_token');
-      localStorage.removeItem('reset_email');
-      return true;
-    }
-
-    throw new Error('Error resetting password. User not found.');
-  };
-
-  const addToHistory = (req: ApiRequest) => {
-    setHistory((prev) => {
-      const updated = [req, ...prev.slice(0, 49)]; // Limit to 50 items
-      localStorage.setItem('api_history', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const clearHistory = () => {
-    setHistory([]);
-    localStorage.removeItem('api_history');
-  };
-
-  const createCollection = (name: string, description: string) => {
-    const newCol: ApiCollection = {
-      id: 'col-' + Math.random().toString(36).substring(2, 9),
-      name,
-      description,
-      requests: [],
-      createdAt: Date.now()
-    };
-    setCollections((prev) => {
-      const updated = [newCol, ...prev];
-      localStorage.setItem('api_collections', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const addToCollection = (collectionId: string, req: ApiRequest) => {
-    setCollections((prev) => {
-      const updated = prev.map((col) => {
-        if (col.id === collectionId) {
-          const reqCopy = { ...req, id: 'req-col-' + Math.random().toString(36).substring(2, 9) };
-          return { ...col, requests: [...col.requests, reqCopy] };
-        }
-        return col;
+      setHistory([]);
+      setCollections([]);
+      setStats({
+        totalRequests: 0,
+        successCount: 0,
+        failCount: 0,
+        methodDistribution: { GET: 0, POST: 0, PUT: 0, DELETE: 0, PATCH: 0 },
+        averageResponseTime: 0,
       });
-      localStorage.setItem('api_collections', JSON.stringify(updated));
-      return updated;
-    });
+    }
   };
 
-  const deleteCollection = (collectionId: string) => {
-    setCollections((prev) => {
-      const updated = prev.filter((col) => col.id !== collectionId);
-      localStorage.setItem('api_collections', JSON.stringify(updated));
-      return updated;
-    });
+  // Update Profile on Backend
+  const updateProfile = async (fullName: string, avatar: string) => {
+    if (!user) return;
+    const response = await authService.updateProfile(fullName, avatar);
+    if (response.success && response.user) {
+      setUser({
+        fullName: response.user.name,
+        username: response.user.email.split('@')[0],
+        email: response.user.email,
+        avatar: response.user.avatar || DEFAULT_AVATAR,
+        role: response.user.role || "Developer",
+        createdAt: response.user.createdAt
+      });
+    }
+  };
+
+  // Change Password on Backend
+  const changePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
+    const response = await authService.changePassword(oldPassword, newPassword);
+    return response.success;
+  };
+
+  // Real Backend Forgot Password
+  const forgotPasswordSimulate = async (email: string): Promise<boolean> => {
+    const response = await authService.forgotPassword(email);
+    if (response.success) {
+      if (response.token) {
+        // Expose token in dev/mock resets for seamless navigation
+        localStorage.setItem('reset_token', response.token);
+      }
+      return true;
+    }
+    throw new Error(response.message || "Failed to trigger password reset");
+  };
+
+  // Real Backend Reset Password
+  const resetPasswordSimulate = async (token: string, newPassword: string): Promise<boolean> => {
+    const response = await authService.resetPassword(token, newPassword);
+    if (response.success) {
+      localStorage.removeItem('reset_token');
+      return true;
+    }
+    throw new Error(response.message || "Failed to reset password");
+  };
+
+  // Refresh history and stats after a request sends successfully
+  const addToHistory = (_req: ApiRequest) => {
+    fetchHistory();
+    fetchStats();
+  };
+
+  const clearHistory = async () => {
+    try {
+      const response = await api.delete('/history');
+      if (response.data && response.data.success) {
+        setHistory([]);
+        fetchStats();
+      }
+    } catch (error) {
+      console.error("Failed to clear history on backend:", error);
+    }
+  };
+
+  const createCollection = async (name: string, description: string) => {
+    try {
+      const response = await collectionService.createCollection(name, description);
+      if (response.success) {
+        fetchCollections();
+        fetchStats();
+      }
+    } catch (error) {
+      console.error("Failed to create collection:", error);
+    }
+  };
+
+  const addToCollection = async (collectionId: string, req: ApiRequest) => {
+    try {
+      // Strip frontend-specific id so backend can generate it
+      const { id, ...cleanReq } = req;
+      const response = await collectionService.saveRequest(collectionId, cleanReq);
+      if (response.success) {
+        fetchCollections();
+      }
+    } catch (error) {
+      console.error("Failed to save request to collection:", error);
+    }
+  };
+
+  const deleteCollection = async (collectionId: string) => {
+    try {
+      const response = await collectionService.deleteCollection(collectionId);
+      if (response.success) {
+        fetchCollections();
+        fetchStats();
+      }
+    } catch (error) {
+      console.error("Failed to delete collection:", error);
+    }
   };
 
   const updateEnvVariables = (vars: EnvVariable[]) => {
@@ -439,25 +433,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('api_env', JSON.stringify(vars));
   };
 
-  const incrementStats = (isSuccess: boolean, method: string) => {
-    setStats((prev) => {
-      const methodKey = method.toUpperCase();
-      const updatedMethodDist = { ...prev.methodDistribution };
-      if (updatedMethodDist[methodKey] !== undefined) {
-        updatedMethodDist[methodKey] += 1;
-      } else {
-        updatedMethodDist[methodKey] = 1;
-      }
-
-      const updated = {
-        totalRequests: prev.totalRequests + 1,
-        successCount: prev.successCount + (isSuccess ? 1 : 0),
-        failCount: prev.failCount + (isSuccess ? 0 : 1),
-        methodDistribution: updatedMethodDist
-      };
-      localStorage.setItem('api_stats', JSON.stringify(updated));
-      return updated;
-    });
+  const incrementStats = (_isSuccess: boolean, _method: string) => {
+    // Stats are computed dynamically on the backend
+    fetchStats();
   };
 
   return (
@@ -483,7 +461,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addToCollection,
         deleteCollection,
         updateEnvVariables,
-        incrementStats
+        incrementStats,
+        fetchHistory,
+        fetchStats
       }}
     >
       {children}

@@ -62,6 +62,8 @@ export const register = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        avatar: user.avatar,
+        role: user.role,
       },
     });
 
@@ -138,6 +140,8 @@ export const login = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        avatar: user.avatar,
+        role: user.role,
       },
     });
 
@@ -208,6 +212,8 @@ export const getMe = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        avatar: user.avatar,
+        role: user.role,
         createdAt: user.createdAt,
       },
     });
@@ -223,4 +229,64 @@ export const getMe = async (req, res) => {
 
   }
 
+};
+
+// =============================
+// Forgot Password
+// =============================
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required." });
+    }
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "No account found with this email address." });
+    }
+
+    const resetToken = "simulate-reset-token-" + Math.random().toString(36).substring(2, 15);
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpire = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset link generated successfully.",
+      token: resetToken,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// =============================
+// Reset Password
+// =============================
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ success: false, message: "Token and password are required." });
+    }
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+    if (!user) {
+      return res.status(400).json({ success: false, message: "Invalid or expired password reset link." });
+    }
+
+    user.password = await hashPassword(password);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successfully.",
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 };

@@ -7,7 +7,7 @@ import HistoryModel from "../models/History.model.js";
 export const getHistory = async (req, res) => {
   try {
     const history = await HistoryModel.find({
-      user: req.user._id,
+      user: req.user.id,
     }).sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -32,7 +32,7 @@ export const deleteHistory = async (req, res) => {
 
     const history = await HistoryModel.findOne({
       _id: id,
-      user: req.user._id,
+      user: req.user.id,
     });
 
     if (!history) {
@@ -63,7 +63,7 @@ export const deleteHistory = async (req, res) => {
 export const clearHistory = async (req, res) => {
   try {
     await HistoryModel.deleteMany({
-      user: req.user._id,
+      user: req.user.id,
     });
 
     return res.status(200).json({
