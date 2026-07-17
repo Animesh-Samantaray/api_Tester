@@ -3256,6 +3256,144 @@ export const DashboardPage: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Dedicated Modal Dialog: Create Collection from Collections Tab */}
+      <AnimatePresence>
+        {isCreatingCollection && !showSaveModal && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              backdropFilter: "blur(4px)",
+              zIndex: 9999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "16px",
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="premium-card"
+              style={{
+                width: "100%",
+                maxWidth: "440px",
+                borderRadius: "var(--radius-lg)",
+                padding: "24px",
+                boxShadow: "var(--shadow-xl)",
+                border: "1px solid var(--glass-border)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "18px",
+                }}
+              >
+                <h3 style={{ fontSize: "1.1rem", fontWeight: 700 }}>
+                  Create New Collection
+                </h3>
+                <button
+                  onClick={() => {
+                    setIsCreatingCollection(false);
+                    setNewCollectionName("");
+                    setNewCollectionDesc("");
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "hsl(var(--muted-foreground))",
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form
+                onSubmit={handleCreateCollectionInsideModal}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.8rem",
+                      color: "hsl(var(--muted-foreground))",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    Collection Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newCollectionName}
+                    onChange={(e) => setNewCollectionName(e.target.value)}
+                    placeholder="e.g. Authentication"
+                    className="input-field"
+                    style={{ fontSize: "0.85rem" }}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.8rem",
+                      color: "hsl(var(--muted-foreground))",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    Description (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newCollectionDesc}
+                    onChange={(e) => setNewCollectionDesc(e.target.value)}
+                    placeholder="e.g. User onboarding routes"
+                    className="input-field"
+                    style={{ fontSize: "0.85rem" }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "12px",
+                    justifyContent: "flex-end",
+                    marginTop: "8px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreatingCollection(false);
+                      setNewCollectionName("");
+                      setNewCollectionDesc("");
+                    }}
+                    className="btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    Create
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

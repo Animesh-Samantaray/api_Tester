@@ -6,7 +6,7 @@ import SavedRequest from "../models/SavedRequest.model.js";
 // ==========================================
 
 /**
- * Create a new collection
+ * Create a new collection folder
  * POST /api/collections
  */
 export const createCollection = async (req, res) => {
@@ -21,20 +21,14 @@ export const createCollection = async (req, res) => {
 
     const collection = await Collection.create({
       name: name.trim(),
-      description: description ? description.trim() : "",
+      description: description?.trim() || "",
       user: req.user.id,
     });
 
     return res.status(201).json({
       success: true,
-      message: "Collection created successfully.",
-      data: {
-        _id: collection._id,
-        name: collection.name,
-        description: collection.description,
-        requests: [],
-        createdAt: collection.createdAt,
-      },
+      message: "Collection created successfully",
+      data: collection,
     });
   } catch (error) {
     return res.status(500).json({
@@ -45,40 +39,22 @@ export const createCollection = async (req, res) => {
 };
 
 /**
- * Get all collections with populated saved requests
+ * Get all collections with their saved requests for the logged-in user
  * GET /api/collections
  */
 export const getCollections = async (req, res) => {
   try {
-    const collections = await Collection.find({ user: req.user.id }).sort({ createdAt: -1 });
+    // Find all collections created by the logged-in user
+    const collections = await Collection.find({ user: req.user.id }).sort({ createdAt: -1 }).lean();
 
-    const populated = await Promise.all(
-      collections.map(async (col) => {
-        const requests = await SavedRequest.find({ collectionId: col._id }).sort({ createdAt: 1 });
-        return {
-          _id: col._id,
-          name: col.name,
-          description: col.description,
-          requests: requests.map(reqItem => ({
-            id: reqItem._id, // frontend maps it
-            _id: reqItem._id,
-            name: reqItem.name,
-            method: reqItem.method,
-            url: reqItem.url,
-            headers: reqItem.headers || [],
-            params: reqItem.params || [],
-            bodyType: reqItem.bodyType || "none",
-            body: reqItem.body || "",
-            createdAt: reqItem.createdAt,
-          })),
-          createdAt: col.createdAt,
-        };
-      })
-    );
+    // Loop through each collection and fetch its saved requests
+    for (const collection of collections) {
+      collection.requests = await SavedRequest.find({ collectionId: collection._id }).sort({ createdAt: 1 });
+    }
 
     return res.status(200).json({
       success: true,
-      data: populated,
+      data: collections,
     });
   } catch (error) {
     return res.status(500).json({
@@ -89,13 +65,13 @@ export const getCollections = async (req, res) => {
 };
 
 /**
- * Get single collection
+ * Get a single collection by ID and populate its saved requests
  * GET /api/collections/:collectionId
  */
 export const getCollectionById = async (req, res) => {
   try {
     const { collectionId } = req.params;
-    const collection = await Collection.findOne({ _id: collectionId, user: req.user.id });
+    const collection = await Collection.findOne({ _id: collectionId, user: req.user.id }).lean();
     if (!collection) {
       return res.status(404).json({
         success: false,
@@ -103,17 +79,12 @@ export const getCollectionById = async (req, res) => {
       });
     }
 
-    const requests = await SavedRequest.find({ collectionId: collection._id }).sort({ createdAt: 1 });
+    // Fetch requests belonging to this collection
+    collection.requests = await SavedRequest.find({ collectionId: collection._id }).sort({ createdAt: 1 });
 
     return res.status(200).json({
       success: true,
-      data: {
-        _id: collection._id,
-        name: collection.name,
-        description: collection.description,
-        requests,
-        createdAt: collection.createdAt,
-      },
+      data: collection,
     });
   } catch (error) {
     return res.status(500).json({
@@ -124,7 +95,7 @@ export const getCollectionById = async (req, res) => {
 };
 
 /**
- * Update collection details
+ * Update collection details (name or description)
  * PUT /api/collections/:collectionId
  */
 export const updateCollection = async (req, res) => {
@@ -136,13 +107,12 @@ export const updateCollection = async (req, res) => {
     if (!collection) {
       return res.status(404).json({
         success: false,
-        message: "Collection not found or access denied.",
+        message: "Collection not found.",
       });
     }
 
     if (name !== undefined) collection.name = name.trim();
     if (description !== undefined) collection.description = description.trim();
-
     await collection.save();
 
     return res.status(200).json({
@@ -159,24 +129,23 @@ export const updateCollection = async (req, res) => {
 };
 
 /**
- * Delete collection and all its requests
+ * Delete a collection folder and all its saved requests
  * DELETE /api/collections/:collectionId
  */
 export const deleteCollection = async (req, res) => {
   try {
     const { collectionId } = req.params;
 
-    const collection = await Collection.findOne({ _id: collectionId, user: req.user.id });
+    const collection = await Collection.findOneAndDelete({ _id: collectionId, user: req.user.id });
     if (!collection) {
       return res.status(404).json({
         success: false,
-        message: "Collection not found or access denied.",
+        message: "Collection not found.",
       });
     }
 
-    // Cascade delete saved requests
-    await SavedRequest.deleteMany({ collectionId: collection._id });
-    await Collection.findByIdAndDelete(collectionId);
+    // Delete all saved requests associated with this collection
+    await SavedRequest.deleteMany({ collectionId });
 
     return res.status(200).json({
       success: true,
@@ -190,13 +159,12 @@ export const deleteCollection = async (req, res) => {
   }
 };
 
-
 // ==========================================
 // Saved Requests
 // ==========================================
 
 /**
- * Save request inside collection
+ * Save a new request inside a collection
  * POST /api/collections/:collectionId/request
  */
 export const saveRequestInsideCollection = async (req, res) => {
@@ -204,11 +172,12 @@ export const saveRequestInsideCollection = async (req, res) => {
     const { collectionId } = req.params;
     const { name, method, url, headers, params, bodyType, body } = req.body;
 
+    // Verify collection exists and belongs to the user
     const collection = await Collection.findOne({ _id: collectionId, user: req.user.id });
     if (!collection) {
       return res.status(404).json({
         success: false,
-        message: "Collection not found or access denied.",
+        message: "Collection not found.",
       });
     }
 
@@ -250,11 +219,13 @@ export const saveRequestInsideCollection = async (req, res) => {
 export const getAllSavedRequests = async (req, res) => {
   try {
     const { collectionId } = req.params;
+
+    // Verify collection belongs to the logged-in user
     const collection = await Collection.findOne({ _id: collectionId, user: req.user.id });
     if (!collection) {
       return res.status(404).json({
         success: false,
-        message: "Collection not found or access denied.",
+        message: "Collection not found.",
       });
     }
 
@@ -273,7 +244,7 @@ export const getAllSavedRequests = async (req, res) => {
 };
 
 /**
- * Get single saved request details
+ * Get details of a single saved request
  * GET /api/request/:requestId
  */
 export const getSavedRequest = async (req, res) => {
@@ -288,7 +259,7 @@ export const getSavedRequest = async (req, res) => {
       });
     }
 
-    // Verify ownership via collection parent
+    // Verify collection ownership
     const collection = await Collection.findOne({ _id: savedRequest.collectionId, user: req.user.id });
     if (!collection) {
       return res.status(403).json({
@@ -310,14 +281,12 @@ export const getSavedRequest = async (req, res) => {
 };
 
 /**
- * Update saved request configuration
+ * Update details of a saved request
  * PUT /api/request/:requestId
  */
 export const updateSavedRequest = async (req, res) => {
   try {
     const { requestId } = req.params;
-    const { name, method, url, headers, params, bodyType, body } = req.body;
-
     const savedRequest = await SavedRequest.findById(requestId);
     if (!savedRequest) {
       return res.status(404).json({
@@ -326,7 +295,7 @@ export const updateSavedRequest = async (req, res) => {
       });
     }
 
-    // Verify ownership
+    // Verify collection ownership
     const collection = await Collection.findOne({ _id: savedRequest.collectionId, user: req.user.id });
     if (!collection) {
       return res.status(403).json({
@@ -335,6 +304,7 @@ export const updateSavedRequest = async (req, res) => {
       });
     }
 
+    const { name, method, url, headers, params, bodyType, body } = req.body;
     if (name !== undefined) savedRequest.name = name.trim();
     if (method !== undefined) savedRequest.method = method.toUpperCase();
     if (url !== undefined) savedRequest.url = url.trim();
@@ -359,7 +329,7 @@ export const updateSavedRequest = async (req, res) => {
 };
 
 /**
- * Delete saved request
+ * Delete a saved request from a collection
  * DELETE /api/request/:requestId
  */
 export const deleteSavedRequest = async (req, res) => {
@@ -374,7 +344,7 @@ export const deleteSavedRequest = async (req, res) => {
       });
     }
 
-    // Verify ownership
+    // Verify collection ownership
     const collection = await Collection.findOne({ _id: savedRequest.collectionId, user: req.user.id });
     if (!collection) {
       return res.status(403).json({
