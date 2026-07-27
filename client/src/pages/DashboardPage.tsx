@@ -51,6 +51,15 @@ export const DashboardPage: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [dashboardContentReady, setDashboardContentReady] = useState(false);
+
+  useEffect(() => {
+    const entranceTimer = window.setTimeout(() => {
+      setDashboardContentReady(true);
+    }, 1200);
+
+    return () => window.clearTimeout(entranceTimer);
+  }, []);
 
   const filteredHistory = history.filter((h) =>
     (h.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -2382,6 +2391,9 @@ export const DashboardPage: React.FC = () => {
         }}
       >
         <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.38, delay: 0.05 }}
           whileHover={{ y: -3 }}
           className="premium-card"
           style={{
@@ -2398,6 +2410,9 @@ export const DashboardPage: React.FC = () => {
         </motion.div>
 
         <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.38, delay: 0.17 }}
           whileHover={{ y: -3 }}
           className="premium-card"
           style={{
@@ -2414,6 +2429,9 @@ export const DashboardPage: React.FC = () => {
         </motion.div>
 
         <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.38, delay: 0.29 }}
           whileHover={{ y: -3 }}
           className="premium-card"
           style={{
@@ -2430,6 +2448,9 @@ export const DashboardPage: React.FC = () => {
         </motion.div>
 
         <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.38, delay: 0.41 }}
           whileHover={{ y: -3 }}
           className="premium-card"
           style={{
@@ -2450,12 +2471,16 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div
+      className="dashboard-shell"
       style={{
         display: "flex",
         minHeight: "100vh",
         background: "hsl(var(--background))",
       }}
     >
+      <div className="dashboard-spline-background" aria-hidden="true">
+        <spline-viewer url="https://prod.spline.design/Sv6Gp4fj25OYfNb7/scene.splinecode" />
+      </div>
       {/* Dashboard Left Sidebar */}
       <aside
         style={{
@@ -2861,10 +2886,48 @@ export const DashboardPage: React.FC = () => {
                 transition={{ duration: 0.15 }}
               >
                 {activeTab === "tester" && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                    {renderMetricsDashboard()}
-                    {renderApiTester()}
-                  </div>
+                  <AnimatePresence>
+                    {dashboardContentReady && (
+                      <motion.div
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        variants={{
+                          hidden: { opacity: 0 },
+                          visible: {
+                            opacity: 1,
+                            transition: { staggerChildren: 0.18 },
+                          },
+                        }}
+                        style={{ display: "flex", flexDirection: "column", gap: "24px" }}
+                      >
+                        <motion.div
+                          variants={{
+                            hidden: { opacity: 0, y: 18 },
+                            visible: {
+                              opacity: 1,
+                              y: 0,
+                              transition: { duration: 0.45 },
+                            },
+                          }}
+                        >
+                          {renderMetricsDashboard()}
+                        </motion.div>
+                        <motion.div
+                          variants={{
+                            hidden: { opacity: 0, y: 22 },
+                            visible: {
+                              opacity: 1,
+                              y: 0,
+                              transition: { duration: 0.5, delay: 0.38 },
+                            },
+                          }}
+                        >
+                          {renderApiTester()}
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 )}
                 {activeTab === "collections" && renderCollections()}
                 {activeTab === "history" && renderHistory()}
