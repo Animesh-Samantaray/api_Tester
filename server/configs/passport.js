@@ -17,19 +17,19 @@ passport.use(
         const email = profile.emails?.[0]?.value;
         const avatar = profile.photos?.[0]?.value;
 
-        // Check if user already exists with this Google account
+        
         let user = await User.findOne({ googleId }).select("-password");
 
         if (user) {
           return done(null, user);
         }
 
-        // Check if a user exists with the same email
+       
         if (email) {
           user = await User.findOne({ email }).select("-password");
 
           if (user) {
-            // Link Google account to existing user
+           
             user.googleId = googleId;
 
             if (avatar) {
@@ -43,7 +43,7 @@ passport.use(
           }
         }
 
-        // Create a new user
+       
         user = await User.create({
           googleId,
           name,
