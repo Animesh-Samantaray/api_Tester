@@ -1,9 +1,7 @@
 import HistoryModel from "../models/History.model.js";
 
-/**
- * Get logged-in user's history
- * GET /api/history
- */
+
+
 export const getHistory = async (req, res) => {
   try {
     const history = await HistoryModel.find({
@@ -22,10 +20,8 @@ export const getHistory = async (req, res) => {
   }
 };
 
-/**
- * Delete one history item
- * DELETE /api/history/:id
- */
+
+
 export const deleteHistory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -56,10 +52,8 @@ export const deleteHistory = async (req, res) => {
   }
 };
 
-/**
- * Clear all history
- * DELETE /api/history
- */
+
+
 export const clearHistory = async (req, res) => {
   try {
     await HistoryModel.deleteMany({

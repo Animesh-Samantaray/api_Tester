@@ -5,10 +5,8 @@ import Collection from "../models/Collection.model.js";
 import SavedRequest from "../models/SavedRequest.model.js";
 import { comparePassword, hashPassword } from "../helper/hashPassword.js";
 
-/**
- * Get user profile details
- * GET /api/user/profile
- */
+
+
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -38,10 +36,8 @@ export const getProfile = async (req, res) => {
   }
 };
 
-/**
- * Update user profile (name, avatar/profileImage)
- * PUT /api/user/profile
- */
+
+
 export const updateProfile = async (req, res) => {
   try {
     const { name, profileImage, avatar } = req.body;
@@ -79,10 +75,8 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-/**
- * Change user password
- * PUT /api/user/change-password
- */
+
+
 export const changePassword = async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
@@ -102,7 +96,7 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    // Only check password if user actually has a password (local signup)
+  
     if (user.password) {
       const isMatch = await comparePassword(oldPassword, user.password);
       if (!isMatch) {
@@ -128,15 +122,12 @@ export const changePassword = async (req, res) => {
   }
 };
 
-/**
- * Get dynamic dashboard statistics
- * GET /api/user/stats
- */
+
 export const getStats = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // 1. Get total, successful, failed history items
+  
     const totalRequests = await History.countDocuments({ user: userId });
     const successCount = await History.countDocuments({
       user: userId,
@@ -144,7 +135,6 @@ export const getStats = async (req, res) => {
     });
     const failCount = totalRequests - successCount;
 
-    // 2. Calculate method distribution
     const historyItems = await History.find({ user: userId }, "method");
     const methodDistribution = { GET: 0, POST: 0, PUT: 0, DELETE: 0, PATCH: 0 };
     historyItems.forEach((item) => {
@@ -156,17 +146,17 @@ export const getStats = async (req, res) => {
       }
     });
 
-    // 3. Count collections
+    
     const collectionsCount = await Collection.countDocuments({ user: userId });
 
-    // 4. Count saved requests across all user collections
+    
     const userCollections = await Collection.find({ user: userId }, "_id");
     const collectionIds = userCollections.map((c) => c._id);
     const savedRequestsCount = await SavedRequest.countDocuments({
       collectionId: { $in: collectionIds },
     });
 
-    // 5. Calculate average response time
+   
     const avgResponseTimeResult = await History.aggregate([
       { $match: { user: new mongoose.Types.ObjectId(userId), responseTime: { $exists: true } } },
       { $group: { _id: null, avgTime: { $avg: "$responseTime" } } }
@@ -193,10 +183,7 @@ export const getStats = async (req, res) => {
   }
 };
 
-/**
- * Upload profile avatar image
- * POST /api/user/upload-avatar
- */
+
 export const uploadAvatar = async (req, res) => {
   try {
     if (!req.file) {

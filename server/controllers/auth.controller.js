@@ -5,9 +5,9 @@ import { comparePassword, hashPassword } from "../helper/hashPassword.js";
 import { sendMail } from "../utils/sendMail.js";
 import otpTemplate from "../utils/otpTemplete.js";
 
-// =============================
+
 // Register User
-// =============================
+
 
 export const register = async (req, res) => {
   try {
@@ -93,7 +93,7 @@ export const login = async (req, res) => {
 
     
 
-    // Generate 6 digit OTP
+    
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.loginOTP = otp;
     user.loginOTPExpire = Date.now() + 10 * 60 * 1000;
@@ -160,15 +160,15 @@ export const verifyLoginOTP = async (req, res) => {
       });
     }
 
-    // Clear OTP fields
+  
     user.loginOTP = undefined;
     user.loginOTPExpire = undefined;
     await user.save();
 
-    // Generate JWT
+    
     const token = generateToken(user._id);
 
-    // Cookie
+   
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
