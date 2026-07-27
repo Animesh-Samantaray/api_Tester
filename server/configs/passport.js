@@ -35,6 +35,7 @@ passport.use(
             if (avatar) {
               user.avatar = avatar;
             }
+            user.isVerified=true;
 
             await user.save();
 
@@ -48,6 +49,7 @@ passport.use(
           name,
           email,
           avatar,
+          isVerified:true
         });
 
         return done(null, user);

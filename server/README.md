@@ -20,8 +20,7 @@ This is the Express-based API server that powers the **API Testing Tool**, handl
 - `GET /me`: Returns logged-in user profile if authenticated.
 - `GET /google`: Redirects to Google consent screen.
 - `GET /google/callback`: Sets JWT cookie and redirects to client.
-- `POST /forgot-password`: Generates database-backed recovery token.
-- `POST /reset-password`: Resets password using verification token.
+- `POST /verify-2fa`: Verifies the login OTP and sets a secure JWT cookie.
 
 ### 2. User Profile & Stats (`/api/user`)
 - `GET /profile`: Get details of the active user.

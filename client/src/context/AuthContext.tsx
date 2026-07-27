@@ -10,6 +10,7 @@ export interface User {
   avatar: string; // Default avatar or backend URL
   role: string;
   createdAt: string;
+  isVerified?: boolean;
 }
 
 export interface ApiRequest {
@@ -50,13 +51,14 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isVerifying: boolean;
-  login: (email: string, password: string, rememberMe: boolean) => Promise<boolean>;
-  signup: (fullName: string, username: string, email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string, rememberMe: boolean) => Promise<{ success: boolean; requires2FA?: boolean; requiresVerification?: boolean; message?: string }>;
+  signup: (fullName: string, username: string, email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   updateProfile: (fullName: string, avatar: string) => Promise<void>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
-  forgotPasswordSimulate: (email: string) => Promise<boolean>;
-  resetPasswordSimulate: (token: string, newPassword: string) => Promise<boolean>;
+  verifyLoginOTP: (email: string, otp: string) => Promise<boolean>;
+  sendVerificationOTP: (email: string) => Promise<{ success: boolean; message: string }>;
+  verifyEmail: (email: string, otp: string) => Promise<{ success: boolean; message: string }>;
   
   // Dashboard & API Tester state
   history: ApiRequest[];
@@ -273,15 +275,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Sign Up with backend integration
-  const signup = async (fullName: string, _username: string, email: string, password: string): Promise<boolean> => {
+  const signup = async (fullName: string, _username: string, email: string, password: string) => {
     // Avoid generating random avatars. Pass default avatar URL
-    await authService.register(fullName, email, password, DEFAULT_AVATAR);
-    return true;
+    const response = await authService.register(fullName, email, password, DEFAULT_AVATAR);
+    return response;
   };
 
   // Login with backend integration
-  const login = async (email: string, password: string, _rememberMe: boolean): Promise<boolean> => {
+  const login = async (email: string, password: string, _rememberMe: boolean) => {
     const response = await authService.login(email, password);
+    if (response.success) {
+      return { success: true, requires2FA: response.requires2FA };
+    }
+    if (response.requiresVerification) {
+      return { success: false, requiresVerification: true, message: response.message };
+    }
+    throw new Error(response.message || 'Invalid email or password');
+  };
+
+  const verifyLoginOTP = async (email: string, otp: string): Promise<boolean> => {
+    const response = await authService.verifyLoginOTP(email, otp);
     if (response.success && response.user) {
       const userProfile: User = {
         fullName: response.user.name,
@@ -289,7 +302,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: response.user.email,
         avatar: response.user.avatar || DEFAULT_AVATAR,
         role: response.user.role || "Developer",
-        createdAt: response.user.createdAt
+        createdAt: response.user.createdAt,
+        isVerified: response.user.isVerified,
       };
 
       setUser(userProfile);
@@ -303,8 +317,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ]);
       return true;
     }
-    
-    throw new Error('Invalid email or password');
+    throw new Error(response.message || 'Verification failed');
+  };
+
+  const sendVerificationOTP = async (email: string) => {
+    const response = await authService.sendVerificationOTP(email);
+    return response;
+  };
+
+  const verifyEmail = async (email: string, otp: string) => {
+    const response = await authService.verifyEmail(email, otp);
+    if (response.success) {
+      if (user) {
+        setUser({ ...user, isVerified: true });
+      }
+    }
+    return response;
   };
 
   // Logout with backend integration
@@ -350,28 +378,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return response.success;
   };
 
-  // Real Backend Forgot Password
-  const forgotPasswordSimulate = async (email: string): Promise<boolean> => {
-    const response = await authService.forgotPassword(email);
-    if (response.success) {
-      if (response.token) {
-        // Expose token in dev/mock resets for seamless navigation
-        localStorage.setItem('reset_token', response.token);
-      }
-      return true;
-    }
-    throw new Error(response.message || "Failed to trigger password reset");
-  };
 
-  // Real Backend Reset Password
-  const resetPasswordSimulate = async (token: string, newPassword: string): Promise<boolean> => {
-    const response = await authService.resetPassword(token, newPassword);
-    if (response.success) {
-      localStorage.removeItem('reset_token');
-      return true;
-    }
-    throw new Error(response.message || "Failed to reset password");
-  };
 
   // Refresh history and stats after a request sends successfully
   const addToHistory = (_req: ApiRequest) => {
@@ -449,8 +456,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         updateProfile,
         changePassword,
-        forgotPasswordSimulate,
-        resetPasswordSimulate,
+        verifyLoginOTP,
+        sendVerificationOTP,
+        verifyEmail,
         history,
         collections,
         envVariables,

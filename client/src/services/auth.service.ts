@@ -7,12 +7,15 @@ export interface BackendUser {
   avatar?: string;
   role?: string;
   createdAt: string;
+  isVerified?: boolean;
 }
 
 export interface AuthResponse {
   success: boolean;
   message: string;
-  user: BackendUser;
+  user?: BackendUser;
+  requires2FA?: boolean;
+  requiresVerification?: boolean;
 }
 
 export interface StatsResponse {
@@ -49,13 +52,18 @@ export const authService = {
     return response.data;
   },
 
-  async forgotPassword(email: string): Promise<{ success: boolean; message: string; token?: string }> {
-    const response = await api.post('/auth/forgot-password', { email });
+  async verifyLoginOTP(email: string, otp: string): Promise<AuthResponse> {
+    const response = await api.post('/auth/verify-login-otp', { email, otp });
     return response.data;
   },
 
-  async resetPassword(token: string, password: string): Promise<{ success: boolean; message: string }> {
-    const response = await api.post('/auth/reset-password', { token, password });
+  async sendVerificationOTP(email: string): Promise<{ success: boolean; message: string }> {
+    const response = await api.post('/auth/send-verification-otp', { email });
+    return response.data;
+  },
+
+  async verifyEmail(email: string, otp: string): Promise<{ success: boolean; message: string }> {
+    const response = await api.post('/auth/verify-email', { email, otp });
     return response.data;
   },
 

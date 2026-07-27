@@ -40,13 +40,27 @@ const userSchema = new mongoose.Schema(
       default: "Developer",
     },
 
-    resetPasswordToken: {
-      type: String,
+    isVerified:{
+      type:Boolean,
+      default:false,
     },
+    emailVerificationOTP:{
+      type:String,
+    },
+    emailVerificationOTPExpire:{
+      type:Date,
+    },
+    loginOTP: {
+  type: String,
+},
 
-    resetPasswordExpire: {
-      type: Date,
-    },
+loginOTPExpire: {
+  type: Date,
+},
+is2FAEnabled: {
+  type: Boolean,
+  default: true,
+},
   },
   {
     timestamps: true,
