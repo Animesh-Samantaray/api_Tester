@@ -249,6 +249,41 @@ code, pre {
   color: #0e7490;
   font-weight: 600;
 }
+
+/* Decorative Spline scene behind the dashboard; it never intercepts UI input. */
+.dashboard-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.dashboard-spline-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.42;
+  overflow: hidden;
+}
+
+.dashboard-spline-background spline-viewer {
+  display: block;
+  width: 120%;
+  height: 100%;
+  transform: translateX(-2%);
+  transform-origin: center;
+}
+
+.dark .dashboard-spline-background {
+  opacity: 0.55;
+}
+
+@media (max-width: 768px) {
+  .dashboard-spline-background spline-viewer {
+    width: 145%;
+    transform: translateX(-12%);
+  }
+}
 .dark .json-key {
   color: #67e8f9;
 }
