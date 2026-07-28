@@ -11,6 +11,7 @@ import { ToastProvider } from "./context/ToastContext";
 import { Navbar } from "./components/Navbar";
 import { ToastContainer } from "./components/Toast";
 import { RouteGuard } from "./components/RouteGuard";
+import { FloatingChat } from "./components/FloatingChat";
 
 // Pages
 import { LandingPage } from "./pages/LandingPage";
@@ -62,6 +63,9 @@ function AppShell() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
+
+      {/* Floating AI Chatbot Assistant */}
+      <FloatingChat />
     </div>
   );
 }
