@@ -58,3 +58,65 @@ This is the Express-based API server that powers the **API Testing Tool**, handl
    ```bash
    npm run dev
    ```
+
+### 6. AI Assistant (`/api/ai`)
+
+APIHUB provides an AI-powered assistant that helps users understand and use the platform. The assistant answers only APIHUB-related questions using the application's documentation and does not respond to unrelated or unsupported queries.
+
+#### Endpoint
+
+- `POST /chat` — Generates an AI response for a user's question.
+
+#### Request Body
+
+```json
+{
+  "question": "How do I create a POST request?"
+}
+```
+
+#### Success Response
+
+```json
+{
+  "success": true,
+  "answer": "To create a POST request:\n1. Select POST from the HTTP Method dropdown.\n2. Enter the API URL.\n3. Open the Body tab.\n4. Add your JSON payload.\n5. Click Send."
+}
+```
+
+#### Error Response
+
+```json
+{
+  "success": false,
+  "message": "Question is required."
+}
+```
+
+or
+
+```json
+{
+  "success": false,
+  "message": "Failed to generate AI response."
+}
+```
+
+#### Frontend Integration
+
+- Display a chatbot interface for users.
+- Send the user's message to `POST /api/ai/chat`.
+- Pass the question in the request body using the `question` field.
+- Display the returned `answer` as the AI response.
+- Show a loading indicator while the request is being processed.
+- Display an error notification if the request fails.
+
+#### AI Behavior
+
+- Answers only questions related to APIHUB.
+- Uses the platform documentation as its knowledge source.
+- Explains features in a clear, step-by-step manner.
+- Does not invent or assume undocumented features.
+- Politely declines unrelated questions.
+
+> **Note:** Conversation history, chat UI, and message persistence should be managed by the frontend. The backend is responsible only for generating AI responses and communicating with the language model.
