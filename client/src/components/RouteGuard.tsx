@@ -42,10 +42,6 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
     );
   }
 
-  if (!isAuthenticated) {
-    // Redirect to login page and remember original destination
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
+  
   return <>{children}</>;
 };

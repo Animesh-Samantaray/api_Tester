@@ -62,12 +62,10 @@ export const LoginPage: React.FC = () => {
         justifyContent: "center",
         padding: "24px",
         position: "relative",
-        background: "var(--hero-glow)",
+        background: "hsl(var(--background))",
         overflow: "hidden",
       }}
     >
-      <div className="hero-glow-bg" />
-
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}

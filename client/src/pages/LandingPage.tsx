@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -24,6 +24,24 @@ import { useAuth } from "../context/AuthContext";
 export const LandingPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [showHeroSpline, setShowHeroSpline] = useState(false);
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 769px)");
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateSplineVisibility = () => {
+      setShowHeroSpline(desktopQuery.matches && !reducedMotionQuery.matches);
+    };
+
+    updateSplineVisibility();
+    desktopQuery.addEventListener("change", updateSplineVisibility);
+    reducedMotionQuery.addEventListener("change", updateSplineVisibility);
+
+    return () => {
+      desktopQuery.removeEventListener("change", updateSplineVisibility);
+      reducedMotionQuery.removeEventListener("change", updateSplineVisibility);
+    };
+  }, []);
 
   const handleNavClick = (anchorId: string) => {
     const element = document.getElementById(anchorId.replace("#", ""));
@@ -156,17 +174,22 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div style={{ paddingTop: "70px", position: "relative" }}>
-      <div className="hero-glow-bg" />
-
       {/* Hero Section */}
       <section
         style={{
           padding: "80px 0 60px 0",
           textAlign: "center",
           position: "relative",
+          overflow: "hidden",
         }}
       >
-        <div className="container">
+        {showHeroSpline && (
+          <div className="landing-spline" aria-hidden="true">
+            <spline-viewer url="https://prod.spline.design/wkf59javYoQ2qTMm/scene.splinecode" />
+          </div>
+        )}
+
+        <div className="container landing-hero-content">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
