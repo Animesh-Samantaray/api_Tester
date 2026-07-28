@@ -164,9 +164,33 @@ export const LandingPage: React.FC = () => {
           padding: "80px 0 60px 0",
           textAlign: "center",
           position: "relative",
+          overflow: "hidden",
         }}
       >
-        <div className="container">
+        {/* Spline 3D background */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 0,
+            pointerEvents: "none",
+            opacity: 0.65,
+          }}
+        >
+          <spline-viewer
+            url="https://prod.spline.design/uYBT2jcCyEo42mLg/scene.splinecode"
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "block",
+            }}
+          />
+        </div>
+
+        <div className="container" style={{ position: "relative", zIndex: 1 }}>
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
