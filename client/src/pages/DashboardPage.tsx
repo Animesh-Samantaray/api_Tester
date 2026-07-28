@@ -2826,7 +2826,9 @@ export const DashboardPage: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           minHeight: "100vh",
-          transition: "margin-left var(--transition-normal)"
+          transition: "margin-left var(--transition-normal)",
+          position: "relative",
+          zIndex: 1
         }}
       >
         {/* Sticky Topbar */}
