@@ -113,8 +113,36 @@ Authorization: Bearer <JWT_TOKEN>
 ```json
 {
   "success": true,
-  "message": "Login successful",
-  "token": "JWT_TOKEN",
+  "requires2FA": true,
+  "message": "OTP sent successfully."
+}
+```
+
+---
+
+## Verify 2FA OTP
+
+### POST
+
+```
+/auth/verify-2fa
+```
+
+### Request Body
+
+```json
+{
+  "email": "animesh@gmail.com",
+  "otp": "123456"
+}
+```
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "message": "Login successful.",
   "user": {
     "_id": "6878a4...",
     "name": "Animesh",

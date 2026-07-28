@@ -29,14 +29,15 @@ A professional, premium web application built for testing APIs, saving collectio
   - Compose queries with methods (GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD).
   - Inject query parameters, custom headers, and raw JSON request body.
   - Choose between Bearer token or Basic Authentication.
-  - Automatically substitues environment variable placeholders using `{{variableName}}` syntax.
+  - Automatically substitutes environment variable placeholders using `{{variableName}}` syntax.
 - **Backend Request Proxy**: Routes requests through the Express proxy to bypass browser-level CORS policies, returning true headers, status codes, response bodies (pretty-printed), and millisecond response times.
 - **Authentication & Security**:
   - Secure registration and email-password login.
   - Unified Google OAuth Login callback creating local users on-the-fly.
   - Persistent cookie sessions verifying login state on page refreshes.
   - Protected routing for workspace panels.
-- **Simulated Sandboxing**: Supports local settings management, password updates, collections organization, and environment management persisted in secure local storage context.
+- **Full Backend Orchestration**: Collections, history logs, request saving, statistics, profile details, and authentication are fully stored and queried from the backend server with no localStorage mock persistence.
+
 
 ---
 

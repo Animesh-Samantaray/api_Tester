@@ -1,6 +1,11 @@
 import express from "express";
 
 import { sendRequest } from "../controllers/request.controller.js";
+import {
+  getSavedRequest,
+  updateSavedRequest,
+  deleteSavedRequest,
+} from "../controllers/collection.controller.js";
 
 import authMiddleware from "../middlewares/auth.middleware.js";
 
@@ -14,5 +19,9 @@ router.post(
   validateJson,
   sendRequest
 );
+
+router.get("/:requestId", authMiddleware, getSavedRequest);
+router.put("/:requestId", authMiddleware, updateSavedRequest);
+router.delete("/:requestId", authMiddleware, deleteSavedRequest);
 
 export default router;

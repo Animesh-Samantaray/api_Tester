@@ -18,13 +18,13 @@ import {
   Sparkles,
   Terminal,
   Cpu,
-  MessageCircle,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export const LandingPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+
   const handleNavClick = (anchorId: string) => {
     const element = document.getElementById(anchorId.replace("#", ""));
     if (element) {
@@ -158,28 +158,14 @@ export const LandingPage: React.FC = () => {
     <div style={{ paddingTop: "70px", position: "relative" }}>
       <div className="hero-glow-bg" />
 
-      <button
-        type="button"
-        className="chatbot-fab"
-        aria-label="Open chatbot"
-        title="Chat with APIHUB"
-      >
-        <MessageCircle size={26} strokeWidth={2.25} />
-      </button>
-
       {/* Hero Section */}
       <section
         style={{
           padding: "80px 0 60px 0",
           textAlign: "center",
           position: "relative",
-          overflow: "hidden",
         }}
       >
-        <div className="landing-hero-spline" aria-hidden="true">
-          <spline-viewer url="https://prod.spline.design/uYBT2jcCyEo42mLg/scene.splinecode" />
-        </div>
-
         <div className="container">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
