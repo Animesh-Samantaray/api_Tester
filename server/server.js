@@ -10,9 +10,11 @@ import requestRoutes from './routes/request.routes.js'
 import historyRoutes from './routes/history.routes.js';
 import collectionRoutes from './routes/collection.routes.js';
 import userRoutes from './routes/user.routes.js';
+import aiRoutes from './routes/ai.route.js';
 
 import path from "path";
 import { fileURLToPath } from "url";
+import authMiddleware from "./middlewares/auth.middleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,6 +49,7 @@ app.use("/api/request", requestRoutes);
 app.use("/api/history", historyRoutes);
 app.use("/api/collections", collectionRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/ai" ,  aiRoutes);
 
 
 app.get("/", (req, res) => {
