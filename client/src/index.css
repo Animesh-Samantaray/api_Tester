@@ -39,36 +39,38 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
   --glass-bg: rgba(250, 251, 253, 0.88);
   --glass-border: rgba(0, 0, 0, 0.06);
+  --hero-glow: radial-gradient(circle at 50% -20%, rgba(124, 58, 237, 0.06) 0%, transparent 55%);
 }
 
 .dark {
-  /* Neutral dark palette */
-  --background: 240 5% 4%;
-  --foreground: 0 0% 96%;
-  --card: 240 4% 7%;
-  --card-foreground: 0 0% 96%;
-  --popover: 240 4% 7%;
-  --popover-foreground: 0 0% 96%;
+  /* Dark Theme HSL */
+  --background: 240 20% 5%;
+  --foreground: 0 0% 98%;
+  --card: 240 18% 8.5%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 18% 8.5%;
+  --popover-foreground: 0 0% 98%;
   --primary: 263.4 75% 62%;
   --primary-foreground: 210 20% 98%;
-  --secondary: 240 4% 10%;
-  --secondary-foreground: 0 0% 96%;
-  --muted: 240 4% 10%;
+  --secondary: 240 10% 12%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 10% 12%;
   --muted-foreground: 240 5% 65%;
   --accent: 263.4 70% 15%;
   --accent-foreground: 263.4 70% 90%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-  --border: 240 3% 16%;
-  --input: 240 3% 16%;
+  --border: 240 12% 14.5%;
+  --input: 240 12% 14.5%;
   --ring: 263.4 75% 62%;
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
-  --glass-bg: rgba(17, 17, 19, 0.88);
-  --glass-border: #27272a;
+  --glass-bg: rgba(12, 12, 16, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.045);
+  --hero-glow: radial-gradient(circle at 50% -20%, rgba(124, 58, 237, 0.25) 0%, transparent 60%);
 }
 
 * {
@@ -139,6 +141,34 @@ button, input, select, textarea {
   background-clip: text;
 }
 
+/* Hero Section Glows */
+.hero-glow-bg {
+  background: var(--hero-glow);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 900px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Decorative 3D scene behind the landing-page headline. */
+.landing-hero-spline {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.55;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.landing-hero-spline spline-viewer {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* Utilities */
 .container {
   max-width: 1280px;
@@ -148,34 +178,9 @@ button, input, select, textarea {
   z-index: 1;
 }
 
-/* Landing-page 3D model placed behind the hero content. */
-.landing-spline {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  opacity: 0.46;
-  pointer-events: none;
-  overflow: hidden;
-  contain: paint;
-}
-
-.landing-spline spline-viewer {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.landing-hero-content {
-  z-index: 1;
-}
-
 @media (max-width: 768px) {
   .container {
     padding: 0 1.25rem;
-  }
-
-  .landing-spline {
-    display: none;
   }
 }
 
@@ -259,7 +264,7 @@ code, pre {
   font-weight: 600;
 }
 
-/* Disable the decorative scene so it cannot tint the neutral dashboard background. */
+/* Decorative Spline scene behind the dashboard; it never intercepts UI input. */
 .dashboard-shell {
   position: relative;
   isolation: isolate;
@@ -267,7 +272,31 @@ code, pre {
 }
 
 .dashboard-spline-background {
-  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.42;
+  overflow: hidden;
+}
+
+.dashboard-spline-background spline-viewer {
+  display: block;
+  width: 120%;
+  height: 100%;
+  transform: translateX(-2%);
+  transform-origin: center;
+}
+
+.dark .dashboard-spline-background {
+  opacity: 0.55;
+}
+
+@media (max-width: 768px) {
+  .dashboard-spline-background spline-viewer {
+    width: 145%;
+    transform: translateX(-12%);
+  }
 }
 .dark .json-key {
   color: #67e8f9;
@@ -420,10 +449,26 @@ code, pre {
   overflow: hidden;
 }
 
+.premium-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.4), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
 .premium-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-  border-color: hsl(var(--border));
+  box-shadow: var(--shadow-lg), 0 4px 20px 0 hsl(var(--primary) / 0.03);
+  border-color: hsl(var(--primary) / 0.2);
+}
+
+.premium-card:hover::before {
+  opacity: 1;
 }
 
 /* Buttons and Micro interactions */
