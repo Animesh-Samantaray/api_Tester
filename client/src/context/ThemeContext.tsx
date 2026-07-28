@@ -11,10 +11,18 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
+    // Migrate existing visitors away from the former dark default once.
+    // Future choices made with the theme toggle are still preserved.
+    const hasMigratedTheme = localStorage.getItem('theme-light-default-v1') === 'true';
+    if (!hasMigratedTheme) {
+      localStorage.setItem('theme-light-default-v1', 'true');
+      return 'light';
+    }
+
     const saved = localStorage.getItem('theme');
     if (saved === 'light' || saved === 'dark') return saved;
-    // Default to dark mode for premium look
-    return 'dark';
+    // Keep the original bright appearance for visitors without a saved preference.
+    return 'light';
   });
 
   useEffect(() => {

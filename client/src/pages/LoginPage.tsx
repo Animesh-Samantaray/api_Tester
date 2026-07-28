@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 
 export const LoginPage: React.FC = () => {
-  const { login, sendVerificationOTP } = useAuth();
+  const { login } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,25 +38,9 @@ export const LoginPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const res = await login(email, password, rememberMe);
-      if (res.success) {
-        if (res.requires2FA) {
-          showToast("OTP sent to your email.", "success");
-          navigate("/otp-verification", { state: { email, password, type: "login" } });
-        } else {
-          showToast("Login Successful!", "success");
-          navigate(from, { replace: true });
-        }
-      } else if (res.requiresVerification) {
-        showToast("Please verify your email first.", "error");
-        try {
-          await sendVerificationOTP(email);
-          showToast("Verification code sent to your email.", "info");
-          navigate("/otp-verification", { state: { email, type: "email-verification" } });
-        } catch (sendErr: any) {
-          showToast(sendErr.message || "Failed to send verification email.", "error");
-        }
-      }
+      await login(email, password, rememberMe);
+      showToast("Login Successful! Welcome back.", "success");
+      navigate(from, { replace: true });
     } catch (err: any) {
       showToast(err.message || "Login Failed. Check credentials.", "error");
     } finally {

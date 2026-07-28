@@ -34,33 +34,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-
-    role: {
-      type: String,
-      default: "Developer",
-    },
-
-    isVerified:{
-      type:Boolean,
-      default:false,
-    },
-    emailVerificationOTP:{
-      type:String,
-    },
-    emailVerificationOTPExpire:{
-      type:Date,
-    },
-    loginOTP: {
-  type: String,
-},
-
-loginOTPExpire: {
-  type: Date,
-},
-is2FAEnabled: {
-  type: Boolean,
-  default: true,
-},
   },
   {
     timestamps: true,

@@ -16,11 +16,11 @@ import { RouteGuard } from "./components/RouteGuard";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignUpPage } from "./pages/SignUpPage";
-import { OtpVerificationPage } from "./pages/OtpVerificationPage";
-import { ProfilePage } from "./pages/ProfilePage";
+import { ForgotPassword } from "./pages/ForgotPassword";
+import { ResetPassword } from "./pages/ResetPassword";
 import { DashboardPage } from "./pages/DashboardPage";
 
-const authRoutes = ["/login", "/signup", "/otp-verification"];
+const authRoutes = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
 function AppShell() {
   const location = useLocation();
@@ -38,7 +38,8 @@ function AppShell() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/otp-verification" element={<OtpVerificationPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Protected Dashboard Route */}
           <Route
@@ -46,14 +47,6 @@ function AppShell() {
             element={
               <RouteGuard>
                 <DashboardPage />
-              </RouteGuard>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <RouteGuard>
-                <ProfilePage />
               </RouteGuard>
             }
           />

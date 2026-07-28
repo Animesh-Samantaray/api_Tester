@@ -99,9 +99,8 @@ export const SignUpPage: React.FC = () => {
     }
   };
 
-  const handleGoogleSignup = () => {
-    showToast("Redirecting to Google Sign Up...", "info");
-    window.location.href = "http://localhost:5000/api/auth/google";
+  const handleSocialMock = (platform: string) => {
+    showToast(`Signup via ${platform} (Simulated)...`, "info");
   };
 
   return (
@@ -445,7 +444,7 @@ export const SignUpPage: React.FC = () => {
         <div style={{ marginTop: "20px" }}>
           <button
             type="button"
-            onClick={handleGoogleSignup}
+            onClick={() => handleSocialMock("Google")}
             className="btn-secondary"
             style={{
               justifyContent: "center",
