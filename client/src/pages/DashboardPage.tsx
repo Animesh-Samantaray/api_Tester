@@ -2398,7 +2398,7 @@ export const DashboardPage: React.FC = () => {
           className="premium-card"
           style={{
             padding: "20px",
-            background: "hsl(var(--card))",
+            background: "linear-gradient(135deg, hsl(var(--card)) 60%, hsl(263.4, 75%, 62%, 0.05) 100%)",
           }}
         >
           <span style={{ fontSize: "0.8rem", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
@@ -2417,7 +2417,7 @@ export const DashboardPage: React.FC = () => {
           className="premium-card"
           style={{
             padding: "20px",
-            background: "hsl(var(--card))",
+            background: "linear-gradient(135deg, hsl(var(--card)) 60%, rgba(16, 185, 129, 0.05) 100%)",
           }}
         >
           <span style={{ fontSize: "0.8rem", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
@@ -2436,7 +2436,7 @@ export const DashboardPage: React.FC = () => {
           className="premium-card"
           style={{
             padding: "20px",
-            background: "hsl(var(--card))",
+            background: "linear-gradient(135deg, hsl(var(--card)) 60%, rgba(59, 130, 246, 0.05) 100%)",
           }}
         >
           <span style={{ fontSize: "0.8rem", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
@@ -2455,7 +2455,7 @@ export const DashboardPage: React.FC = () => {
           className="premium-card"
           style={{
             padding: "20px",
-            background: "hsl(var(--card))",
+            background: "linear-gradient(135deg, hsl(var(--card)) 60%, rgba(249, 115, 22, 0.05) 100%)",
           }}
         >
           <span style={{ fontSize: "0.8rem", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
@@ -2573,7 +2573,7 @@ export const DashboardPage: React.FC = () => {
                     gap: "12px",
                     padding: "10px 14px",
                     borderRadius: "10px",
-                    background: isActive ? "hsl(var(--primary) / 0.15)" : "none",
+                    background: isActive ? "linear-gradient(90deg, hsl(var(--primary) / 0.15) 0%, transparent 100%)" : "none",
                     color: isActive ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
                     fontWeight: isActive ? 700 : 500,
                     border: "none",
