@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { User, Bot } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import type { ChatMessage as ChatMessageType } from "../types/chat";
 
 interface ChatMessageProps {
@@ -49,6 +52,7 @@ const CodeBlock: React.FC<{ code: string; language: string }> = ({
 };
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
+  const { user } = useAuth();
   const isUser = message.sender === "user";
 
   const formatTime = (date: Date) => {
@@ -138,36 +142,74 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   };
 
   return (
-    <div
-      className={`flex flex-col mb-4 w-full ${
-        isUser ? "items-end" : "items-start"
+    <motion.div
+      initial={{ opacity: 0, y: 12, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className={`flex items-start gap-2.5 mb-4 w-full ${
+        isUser ? "flex-row-reverse" : "flex-row"
       }`}
     >
-      <div
-        className="max-w-[85%] px-4 py-3 shadow-md"
-        style={
-          isUser
-            ? {
-                background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-                color: "#ffffff",
-                borderRadius: "18px 18px 2px 18px",
-              }
-            : {
-                backgroundColor: "rgba(24, 24, 27, 0.8)",
-                border: "1px solid rgba(255, 255, 255, 0.05)",
-                color: "#ffffff",
-                borderRadius: "18px 18px 18px 2px",
-              }
-        }
-      >
-        <div className="text-sm break-words">{renderMarkdown(message.message)}</div>
+      {/* Avatar Icon */}
+      {isUser ? (
+        <div 
+          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border select-none overflow-hidden"
+          style={{
+            backgroundColor: "rgba(99, 102, 241, 0.15)",
+            borderColor: "rgba(99, 102, 241, 0.25)",
+            color: "#a5b4fc",
+          }}
+        >
+          {user?.avatar ? (
+            <img src={user.avatar} className="w-full h-full object-cover" alt="User" />
+          ) : (
+            <User size={14} />
+          )}
+        </div>
+      ) : (
+        <div 
+          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border select-none text-white"
+          style={{
+            background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
+            borderColor: "rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)",
+          }}
+        >
+          <Bot size={14} />
+        </div>
+      )}
+
+      {/* Message Bubble & Time */}
+      <div className={`flex flex-col max-w-[76%] ${isUser ? "items-end" : "items-start"}`}>
+        <div
+          className="px-4 py-3 shadow-md border"
+          style={
+            isUser
+              ? {
+                  background: "linear-gradient(135deg, #5850EC 0%, #7E3AF2 100%)",
+                  borderColor: "rgba(255, 255, 255, 0.05)",
+                  color: "#ffffff",
+                  borderRadius: "18px 2px 18px 18px",
+                }
+              : {
+                  backgroundColor: "rgba(22, 22, 26, 0.85)",
+                  borderColor: "rgba(255, 255, 255, 0.06)",
+                  color: "#ffffff",
+                  borderRadius: "2px 18px 18px 18px",
+                }
+          }
+        >
+          <div className="text-sm break-words">{renderMarkdown(message.message)}</div>
+        </div>
+        
+        {/* Timestamp */}
+        <span
+          className="text-[9px] mt-1 px-1 select-none font-medium"
+          style={{ color: "hsl(var(--muted-foreground))" }}
+        >
+          {formatTime(message.timestamp)}
+        </span>
       </div>
-      <span
-        className="text-[10px] mt-1 px-1 select-none"
-        style={{ color: "hsl(var(--muted-foreground))" }}
-      >
-        {formatTime(message.timestamp)}
-      </span>
-    </div>
+    </motion.div>
   );
 };
