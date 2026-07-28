@@ -18,6 +18,7 @@ import {
   Sparkles,
   Terminal,
   Cpu,
+  MessageCircle,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -156,6 +157,15 @@ export const LandingPage: React.FC = () => {
   return (
     <div style={{ paddingTop: "70px", position: "relative" }}>
       <div className="hero-glow-bg" />
+
+      <button
+        type="button"
+        className="chatbot-fab"
+        aria-label="Open chatbot"
+        title="Chat with APIHUB"
+      >
+        <MessageCircle size={26} strokeWidth={2.25} />
+      </button>
 
       {/* Hero Section */}
       <section
