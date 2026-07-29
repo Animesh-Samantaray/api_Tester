@@ -20,9 +20,11 @@ import {
   Cpu,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 export const LandingPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const { theme } = useTheme();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
   const handleNavClick = (anchorId: string) => {
@@ -164,8 +166,29 @@ export const LandingPage: React.FC = () => {
           padding: "80px 0 60px 0",
           textAlign: "center",
           position: "relative",
+          overflow: "hidden",
         }}
       >
+        {theme === "dark" && (
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: 0,
+              pointerEvents: "none",
+            }}
+          >
+            <spline-viewer
+              url="https://prod.spline.design/uYBT2jcCyEo42mLg/scene.splinecode"
+              style={{ width: "100%", height: "100%" }}
+            />
+          </div>
+        )}
+
         <div className="container">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}

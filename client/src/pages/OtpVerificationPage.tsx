@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { motion } from "framer-motion";
-import { Shield, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Shield, ArrowLeft, Terminal } from "lucide-react";
 
 export const OtpVerificationPage: React.FC = () => {
   const { verifyLoginOTP, verifyEmail, sendVerificationOTP, login } = useAuth();
@@ -33,6 +33,15 @@ export const OtpVerificationPage: React.FC = () => {
   const [isResending, setIsResending] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
 
   useEffect(() => {
     if (!email) {
@@ -147,52 +156,67 @@ export const OtpVerificationPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+    <div
+      style={{
+        height: "100dvh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        position: "relative",
+        background: "var(--hero-glow)",
+        overflow: "hidden",
+      }}
+    >
+      <div className="hero-glow-bg" />
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 15 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl text-center"
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 100, damping: 15 }}
+        className="glass-panel"
+        style={{
+          width: "100%",
+          maxWidth: "440px",
+          borderRadius: "var(--radius-lg)",
+          padding: "40px",
+          boxShadow: "var(--shadow-xl)",
+          position: "relative",
+          zIndex: 1,
+          textAlign: "center",
+        }}
       >
-        {/* Banner: OTP Sent */}
-        <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-2 rounded-full text-sm font-semibold mb-6">
-          <CheckCircle2 size={16} />
-          <span>OTP Sent</span>
+        <div style={{ marginBottom: "32px" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+            <Link
+              to="/"
+              aria-label="Go to landing page"
+              style={{
+                background: "linear-gradient(135deg, hsl(263.4, 70%, 50.4%) 0%, hsl(263.4, 85%, 65%) 100%)",
+                color: "white", width: "36px", height: "36px", borderRadius: "10px", display: "inline-flex",
+                alignItems: "center", justifyContent: "center", boxShadow: "0 4px 10px rgba(124, 58, 237, 0.3)",
+              }}
+            >
+              <Terminal size={18} />
+            </Link>
+            <span style={{ fontSize: "1.5rem", fontWeight: 800 }}>Verification</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+            <div style={{ background: "hsl(var(--primary) / 0.1)", color: "hsl(var(--primary))", padding: "12px", borderRadius: "50%", display: "flex" }}>
+              <Shield size={28} />
+            </div>
+          </div>
+          <h2 style={{ fontSize: "1.5rem", fontWeight: 800 }}>Verify your identity</h2>
+          <p style={{ color: "hsl(var(--muted-foreground))", fontSize: "0.875rem", marginTop: "6px", lineHeight: 1.5 }}>
+            Enter the 6-digit code sent to <strong style={{ color: "hsl(var(--foreground))" }}>{email}</strong>
+          </p>
         </div>
 
-        <div className="flex justify-center mb-6">
-          <div className="bg-blue-600/10 p-3 rounded-full text-blue-500">
-            <Shield size={36} />
-          </div>
-        </div>
-
-        <h2 className="text-2xl font-bold text-white mb-2">Two-Factor Authentication</h2>
-        <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-          We have sent a 6-digit verification code to
-          <br />
-          <span className="text-blue-400 font-semibold">{email}</span>
-        </p>
-
-        <form onSubmit={handleVerify} className="space-y-6">
-          {/* Email read-only field (prefilled) */}
-          <div className="text-left">
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-              Verifying Email Address
-            </label>
-            <input
-              type="text"
-              value={email}
-              readOnly
-              className="w-full bg-slate-850 border border-slate-700 rounded-lg px-4 py-3 text-slate-300 text-sm focus:outline-none cursor-not-allowed"
-            />
-          </div>
-
-          {/* OTP inputs */}
+        <form onSubmit={handleVerify} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 text-left">
+            <label style={{ display: "block", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, marginBottom: "10px", color: "hsl(var(--muted-foreground))" }}>
               Verification Code
             </label>
-            <div className="flex justify-between gap-2">
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
               {otp.map((digit, index) => (
                 <input
                   key={index}
@@ -203,47 +227,48 @@ export const OtpVerificationPage: React.FC = () => {
                   onChange={(e) => handleOtpChange(e.target.value, index)}
                   onKeyDown={(e) => handleOtpKeyDown(e, index)}
                   onPaste={handleOtpPaste}
-                  className="w-12 h-14 text-center text-xl font-bold text-white bg-slate-800 border border-slate-700 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+                  className="input-field"
+                  aria-label={`Verification digit ${index + 1}`}
+                  style={{ width: "100%", height: "52px", padding: 0, textAlign: "center", fontSize: "1.25rem", fontWeight: 700 }}
                 />
               ))}
             </div>
           </div>
 
-          {/* Verify Button */}
           <button
             type="submit"
             disabled={isLoading || otp.some((d) => d === "")}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/40 text-white font-semibold py-3 rounded-xl transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] disabled:pointer-events-none"
+            className="btn-primary"
+            style={{ width: "100%", justifyContent: "center", padding: "12px" }}
           >
-            {isLoading ? "Verifying..." : "Verify"}
+            {isLoading ? "Verifying..." : "Verify code"}
           </button>
         </form>
 
-        {/* Resend OTP */}
-        <div className="mt-8 pt-6 border-t border-slate-800 flex flex-col items-center gap-4">
-          <div className="text-sm">
+        <div style={{ textAlign: "center", marginTop: "28px", fontSize: "0.875rem", color: "hsl(var(--muted-foreground))" }}>
+          <div>
             {canResend ? (
               <button
                 type="button"
                 onClick={handleResend}
                 disabled={isResending}
-                className="text-blue-500 hover:text-blue-400 font-semibold transition-colors disabled:opacity-50"
+                style={{ border: "none", background: "none", padding: 0, cursor: "pointer", fontWeight: 600, color: "hsl(var(--primary))" }}
               >
                 {isResending ? "Resending..." : "Resend OTP"}
               </button>
             ) : (
-              <span className="text-slate-500 font-medium">
-                Resend OTP in <span className="text-slate-300 font-semibold">{countdown}s</span>
+              <span>
+                Resend code in <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>{countdown}s</span>
               </span>
             )}
           </div>
 
           <Link
             to="/login"
-            className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm font-semibold transition-colors mt-2"
+            style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "18px", fontWeight: 600, color: "hsl(var(--primary))" }}
           >
             <ArrowLeft size={16} />
-            <span>Back to Login</span>
+            <span>Back to sign in</span>
           </Link>
         </div>
       </motion.div>
