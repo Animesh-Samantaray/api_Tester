@@ -1,5 +1,8 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Send } from "lucide-react";
+import { Send, Mic, MicOff } from "lucide-react";
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -13,104 +16,155 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   isOpen,
 }) => {
   const [input, setInput] = useState("");
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+    isMicrophoneAvailable,
+  } = useSpeechRecognition();
+
+  // ---------------- Send ----------------
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
     if (!input.trim() || isLoading) return;
+
     onSendMessage(input.trim());
     setInput("");
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  // ---------------- Voice ----------------
+
+  const handleVoice = async () => {
+    if (!browserSupportsSpeechRecognition) {
+      alert("Speech Recognition is not supported in this browser.");
+      return;
+    }
+
+    if (!isMicrophoneAvailable) {
+      alert("Please allow microphone permission.");
+      return;
+    }
+
+    if (!listening) {
+      resetTranscript();
+
+      await SpeechRecognition.startListening({
+        continuous: false,
+        language: "en-US",
+      });
+    } else {
+      SpeechRecognition.stopListening();
+    }
+  };
+
+  // Automatically insert transcript
+  useEffect(() => {
+    if (!listening && transcript.trim()) {
+      setInput(transcript.trim());
+      resetTranscript();
+    }
+  }, [listening, transcript]);
+
+  // ---------------- Keyboard ----------------
+
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>
+  ) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
   };
 
-  // Automatically focus input when open state changes
+  // ---------------- Focus ----------------
+
   useEffect(() => {
     if (isOpen && textareaRef.current) {
-      // Small timeout to ensure components are animated and visible
       const timer = setTimeout(() => {
         textareaRef.current?.focus();
-      }, 100);
+      }, 150);
+
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
-  // Dynamically adjust the height of the textarea based on text length
+  // ---------------- Auto Height ----------------
+
   useEffect(() => {
     const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = "auto";
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
-    }
-  }, [input]);
 
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    textarea.style.height =
+      Math.min(textarea.scrollHeight, 120) + "px";
+  }, [input]);
+console.log("Supports:", browserSupportsSpeechRecognition);
+console.log("Mic:", isMicrophoneAvailable);
+console.log("Listening:", listening);
   return (
     <form
       onSubmit={handleSubmit}
-      className="p-4 border-t"
-      style={{
-        borderColor: "rgba(255, 255, 255, 0.05)",
-        backgroundColor: "rgba(10, 10, 12, 0.4)",
-      }}
+      className="border-t border-zinc-800 bg-[#111114] p-4"
     >
-      <div className="relative flex items-end w-full">
+      <div className="flex items-end gap-2 rounded-2xl border border-zinc-700 bg-zinc-900 p-2">
+
+        {/* Textarea */}
+
         <textarea
           ref={textareaRef}
+          rows={1}
           value={input}
+          disabled={isLoading}
+          placeholder="Ask APIHUB AI..."
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask APIHUB AI..."
-          rows={1}
-          disabled={isLoading}
-          className="w-full pl-4 pr-12 py-3 rounded-xl text-sm transition-all resize-none scrollbar-thin"
-          style={{
-            minHeight: "44px",
-            maxHeight: "120px",
-            lineHeight: "20px",
-            backgroundColor: "rgba(20, 20, 25, 0.8)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            color: "#ffffff",
-            outline: "none",
-            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.4)",
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = "hsl(var(--ring))";
-            e.target.style.boxShadow = "0 0 0 2px hsl(var(--ring) / 0.15)";
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = "rgba(255, 255, 255, 0.08)";
-            e.target.style.boxShadow = "inset 0 1px 2px rgba(0,0,0,0.4)";
-          }}
+          className="flex-1 resize-none bg-transparent text-sm text-white outline-none placeholder:text-zinc-500 max-h-32"
         />
+
+        {/* Voice Button */}
+
+        {browserSupportsSpeechRecognition && (
+          <button
+            type="button"
+            onClick={handleVoice}
+            disabled={!isMicrophoneAvailable}
+            className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 ${
+              listening
+                ? "bg-red-500 text-white animate-pulse"
+                : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"
+            }`}
+            title={
+              listening
+                ? "Stop Recording"
+                : "Start Voice Input"
+            }
+          >
+            {listening ? (
+              <MicOff size={18} />
+            ) : (
+              <Mic size={18} />
+            )}
+          </button>
+        )}
+
+        {/* Send */}
+
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
-          className="absolute right-2 bottom-2 p-2 rounded-lg flex items-center justify-center transition-all"
-          style={{
-            background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-            color: "#ffffff",
-            cursor: isLoading || !input.trim() ? "not-allowed" : "pointer",
-            opacity: isLoading || !input.trim() ? 0.4 : 1,
-            boxShadow: "0 2px 6px rgba(99, 102, 241, 0.3)",
-          }}
-          onMouseEnter={(e) => {
-            if (!isLoading && input.trim()) {
-              e.currentTarget.style.transform = "scale(1.05)";
-              e.currentTarget.style.boxShadow = "0 4px 10px rgba(99, 102, 241, 0.5)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow = "0 2px 6px rgba(99, 102, 241, 0.3)";
-          }}
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-violet-500/30 disabled:cursor-not-allowed disabled:opacity-40"
+          title="Send"
         >
-          <Send size={16} />
+          <Send size={18} />
         </button>
+
       </div>
     </form>
   );
