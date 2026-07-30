@@ -12,10 +12,6 @@ const savedRequestSchema = new mongoose.Schema(
       required: [true, "Request name is required"],
       trim: true,
     },
-    method: {
-      type: String,
-      required: true,
-    },
     url: {
       type: String,
       required: true,
@@ -36,6 +32,12 @@ const savedRequestSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+  method: {
+  type: String,
+  required: true,
+  uppercase: true,
+  enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+  }
   },
   {
     timestamps: true,
