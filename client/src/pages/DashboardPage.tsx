@@ -2677,11 +2677,11 @@ export const DashboardPage: React.FC = () => {
                 cursor: "pointer",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {/* <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10b981" }} />
-                <span style={{ fontSize: "0.8rem", fontWeight: 700 }}>Personal Space</span>
-              </div>
-              <ChevronDown size={14} style={{ opacity: 0.6 }} />
+                <span style={{ fontSize: "0.8rem", fontWeight: 700 }}></span>
+              </div> */}
+              
             </div>
           ) : (
             <div
