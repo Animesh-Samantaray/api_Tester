@@ -32,11 +32,12 @@ const savedRequestSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    method: {
+  method: {
   type: String,
   required: true,
-  enum: ['get', 'post', 'put', 'patch', 'delete', 'options', 'head']
-    }
+  uppercase: true,
+  enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+  }
   },
   {
     timestamps: true,
