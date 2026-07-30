@@ -83,6 +83,10 @@ export const FloatingChat: React.FC = () => {
     }
   };
 
+  const handleClearChat = () => {
+    setMessages([]);
+  };
+
   return (
     <div ref={chatRef}>
       <FloatingChatButton onClick={toggleChat} isOpen={isOpen} />
@@ -93,6 +97,7 @@ export const FloatingChat: React.FC = () => {
             onClose={closeChat}
             messages={messages}
             onSendMessage={handleSendMessage}
+            onClearChat={handleClearChat}
             isLoading={isLoading}
           />
         )}
